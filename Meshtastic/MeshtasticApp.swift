@@ -22,12 +22,15 @@ struct MeshtasticAppleApp: App {
 	@State var addChannels = false
 
 	init() {
+
 		let persistenceController = PersistenceController.shared
-		accessoryManager = AccessoryManager()
+
 		let appState = AppState(
-			router: Router(),
-			accessoryManager: accessoryManager
+			router: Router()
 		)
+
+		accessoryManager = AccessoryManager(appState: appState)
+
 		self._appState = ObservedObject(wrappedValue: appState)
 		// Initialize the BLEManager singleton with the necessary dependencies
 		BLEManager.setup(appState: appState, context: persistenceController.container.viewContext)
@@ -39,7 +42,7 @@ struct MeshtasticAppleApp: App {
 		// Show tips in development
 		try? Tips.resetDatastore()
 	#endif
-		appState.accessoryManager.startDiscovery()
+		accessoryManager.startDiscovery()
 	}
     var body: some Scene {
         WindowGroup {

@@ -22,6 +22,7 @@ protocol Connection {
 	var packetDelegate: PacketDelegate? { get set }
 	func disconnect() async throws
 	func drainPendingPackets() async throws
+	func startDrainPendingPackets() throws
 }
 
 protocol WirelessConnection: Connection {

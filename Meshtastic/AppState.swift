@@ -4,7 +4,6 @@ import SwiftUI
 class AppState: ObservableObject {
 	@Published
 	var router: Router
-	var accessoryManager: AccessoryManager
 
 	@Published
 	var unreadChannelMessages: Int
@@ -18,9 +17,8 @@ class AppState: ObservableObject {
 
 	private var cancellables: Set<AnyCancellable> = []
 
-	init(router: Router, accessoryManager: AccessoryManager) {
+	init(router: Router) {
 		self.router = router
-		self.accessoryManager = accessoryManager
 		self.unreadChannelMessages = 0
 		self.unreadDirectMessages = 0
 

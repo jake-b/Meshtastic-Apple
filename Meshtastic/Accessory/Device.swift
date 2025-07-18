@@ -20,7 +20,7 @@ struct Device: Identifiable, Hashable {
 	var rssi: Int?
 	var lastUpdate: Date?
 
-	let connectionState: ConnectionState
+	var connectionState: ConnectionState
 
 	init(id: UUID, name: String, transportType: TransportType, identifier: String, connectionState: ConnectionState = .disconnected, rssi: Int? = nil) {
 		self.id = id

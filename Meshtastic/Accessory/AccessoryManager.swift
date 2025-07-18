@@ -8,6 +8,7 @@ import SwiftUI
 import MeshtasticProtobufs
 import OSLog
 import CocoaMQTT
+import CoreLocation
 
 enum AccessoryError: Error {
 	case discoveryFailed(String)
@@ -26,32 +27,44 @@ enum AccessoryManagerState {
 	case subscribed
 }
 
-class AccessoryManager: ObservableObject, PacketDelegate {
+class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManagerDelegate {
+	// Constants
 	let NONCE_ONLY_CONFIG = 69420
 	let NONCE_ONLY_DB = 69421
+	let minimumVersion = "2.3.15"
 
-	static let shared = AccessoryManager()
+	// Global Objects
+	var appState: AppState
 	let context = PersistenceController.shared.container.viewContext
+	let mqttManager = MqttClientProxyManager.shared
 
+	// Published Stuff
+	@Published var mqttProxyConnected: Bool = false
 	@Published var devices: [Device] = []
-	@Published var status: AccessoryManagerState
+	@Published var state: AccessoryManagerState
+	@Published var mqttError: String = ""
 
 	private let transports: [any Transport]
-	private var activeConnection: (device: Device, connection: any Connection)?
-	private var discoveryTask: Task<Void, Never>?
-	private var didReadConifg: Bool = false
-	private var didReadDatabase: Bool = false
+	var activeConnection: (device: Device, connection: any Connection)?
 
+	private var discoveryTask: Task<Void, Never>?
+	private var locationTask: Task<Void, Error>?
 	private var wantConfigContinuations: [UInt32: CheckedContinuation<Void, Error>] = [:]
 
-	init(transports: [any Transport] = [BLETransport()]) {
+	// Config
+	public var wantRangeTestPackets = true
+	var wantStoreAndForwardPackets = false
+
+	init(appState: AppState, transports: [any Transport] = [BLETransport()]) {
 		self.transports = transports
-		self.status = .uninitialized
+		self.state = .uninitialized
+		self.appState = appState
+		self.mqttManager.delegate = self
 	}
 
 	func startDiscovery() {
 		stopDiscovery()
-		status = .discovering
+		updateState(.discovering)
 		for transport in transports {
 			if var wirelessTransport = transport as? any WirelessTransport {
 				wirelessTransport.rssiDelegate = self
@@ -73,14 +86,19 @@ class AccessoryManager: ObservableObject, PacketDelegate {
 				} else {
 					allDevices.append(newDevice)
 				}
-				self.devices = allDevices.sorted { $0.name < $1.name }
+
+				// Update the list of discovered devices on the main thread for presentation
+				// in the user interface
+				Task { @MainActor in
+					self.devices = allDevices.sorted { $0.name < $1.name }
+				}
 			}
 		}
 	}
 
 	func stopDiscovery() {
 		discoveryTask?.cancel()
-		status = .idle
+		updateState(.idle)
 		discoveryTask = nil
 		for transport in transports {
 			if var wirelessTransport = transport as? any WirelessTransport {
@@ -110,18 +128,13 @@ class AccessoryManager: ObservableObject, PacketDelegate {
 
 		// Update device state to connecting
 		Task { @MainActor in
-			status = .connecting
-			updateDeviceState(deviceId: device.id, state: .connecting)
+			updateState(.connecting)
+			updateDevice(deviceId: device.id, key: \.connectionState, value: .connecting)
 		}
-
-		self.didReadConifg = false
-		self.didReadDatabase = false
 
 		// Find the transport that handles this device
 		guard let transport = transports.first(where: { $0.type == device.transportType }) else {
-			Task { @MainActor in
-				updateDeviceState(deviceId: device.id, state: .disconnected)
-			}
+			updateDevice(deviceId: device.id, key: \.connectionState, value: .disconnected)
 			throw AccessoryError.connectionFailed("No transport for type")
 		}
 
@@ -131,15 +144,16 @@ class AccessoryManager: ObservableObject, PacketDelegate {
 
 		// Start trying to connect
 		var lastError: Error?
+		var shouldRetry = true
 		for attempt in 1...maxRetries {
 			if attempt > 1 {
 				Logger.services.info("Retrying connection to \(device.name) (\(attempt)/\(maxRetries))")
 				Task { @MainActor in
-					status = .retrying(attempt: attempt)
+					updateState(.retrying(attempt: attempt))
 				}
 			} else {
 				Task { @MainActor in
-					status = .connecting
+					updateState(.connecting)
 				}
 			}
 
@@ -155,51 +169,78 @@ class AccessoryManager: ObservableObject, PacketDelegate {
 				// Tell the connection to report its packets to the AccessoryManager
 				connection.packetDelegate = self
 
-				// We have an active connection
-				Task { @MainActor in
-					activeConnection = (device: device, connection: connection)
-					updateDeviceState(deviceId: device.id, state: .connected)
+				updateState(.communicating)
+
+				activeConnection = (device: device, connection: connection)
+
+				// Send Heartbeat before wantConfig
+				var heartbeatToRadio: ToRadio = ToRadio()
+				heartbeatToRadio.payloadVariant = .heartbeat(Heartbeat())
+				try? await connection.send(heartbeatToRadio)
+
+				try? await sendNonceRequest(nonce: UInt32(NONCE_ONLY_CONFIG), connection: connection)
+				Logger.services.info("✅ [Accessory] NONCE_ONLY_CONFIG Done")
+
+				try? await sendNonceRequest(nonce: UInt32(NONCE_ONLY_DB), connection: connection)
+				Logger.services.info("✅ [Accessory] NONCE_ONLY_DB Done")
+
+				guard let firmwareVersion = activeConnection?.device.firmwareVersion else {
+					throw AccessoryError.connectionFailed("Firmware version not available")
 				}
 
-				await didConnect()
+				let lastDotIndex = firmwareVersion.lastIndex(of: ".")
+				if lastDotIndex == nil {
+					shouldRetry = false
+					throw AccessoryError.connectionFailed("🚨" + "Update Your Firmware".localized)
+				}
+
+				let version = firmwareVersion[...(lastDotIndex ?? String.Index(utf16Offset: 6, in: firmwareVersion))]
+				let connectedVersion = String(version.dropLast())
+				UserDefaults.firmwareVersion = connectedVersion
+
+				let supportedVersion = self.minimumVersion.compare(connectedVersion, options: .numeric) == .orderedAscending || minimumVersion.compare(connectedVersion, options: .numeric) == .orderedSame
+				if !supportedVersion {
+					shouldRetry = false
+					throw AccessoryError.connectionFailed("🚨" + "Update Your Firmware".localized)
+				}
+
+				// We have an active connection
+				Task { @MainActor in
+					updateDevice(deviceId: device.id, key: \.connectionState, value: .connected)
+				}
+
+				await initializeMqtt()
+				initializeLocationProvider()
 
 				return
 			} catch {
+				Logger.services.error("🚨 Connection ERROR: \(error)")
 				lastError = error
-				if attempt < maxRetries {
+				if attempt < maxRetries && shouldRetry {
 					try? await Task.sleep(for: retryDelay)
+					try? await self.disconnect()
 				}
 			}
 		}
-		updateDeviceState(deviceId: device.id, state: .disconnected)
+		updateDevice(deviceId: device.id, key: \.connectionState, value: .disconnected)
 		throw lastError ?? AccessoryError.connectionFailed("Connection failed after retries")
 	}
 
-	private func sendNonceRequest(nonce: UInt32) async throws {
+	private func sendNonceRequest(nonce: UInt32, connection: any Connection) async throws {
+		// Create the protobuf with the wantConfigID nonce
 		var toRadio: ToRadio = ToRadio()
 		toRadio.wantConfigID = nonce
+
+		// Send it to the radio
 		try await self.send(data: toRadio)
-		Task {
-			try await activeConnection?.connection.drainPendingPackets()
-		}
+
+		// Start draining packets in the background
+		try connection.startDrainPendingPackets()
+
+		// Wait for the nonce request to be completed before continuing
 		try await withCheckedThrowingContinuation { cont in
 			wantConfigContinuations[nonce] = cont
 		}
-	}
-
-	private func didConnect() async {
-		Logger.services.info("✅ [Accessory] Begin Handshake")
-		status = .communicating
-
-		// Send Heartbeat before wantConfig
-		var heartbeatToRadio: ToRadio = ToRadio()
-		heartbeatToRadio.payloadVariant = .heartbeat(Heartbeat())
-		try? await self.send(data: heartbeatToRadio)
-
-		try? await sendNonceRequest(nonce: UInt32(NONCE_ONLY_CONFIG))
-		Logger.services.info("✅ [Accessory] NONCE_ONLY_CONFIG Done")
-		try? await sendNonceRequest(nonce: UInt32(NONCE_ONLY_DB))
-		Logger.services.info("✅ [Accessory] NONCE_ONLY_DB Done")
 	}
 
 	func didDisconnect() {
@@ -212,40 +253,34 @@ class AccessoryManager: ObservableObject, PacketDelegate {
 		}
 		activeConnection = nil
 		try await active.connection.disconnect()
-		updateDeviceState(deviceId: active.device.id, state: .disconnected)
+		updateDevice(deviceId: active.device.id, key: \.connectionState, value: .disconnected)
 		didDisconnect()
 	}
 
-	private func updateDevice<T>(deviceId: UUID, key: WritableKeyPath<Device, T>, value: T) {
+	// Update device attributes on MainActor for presentation in the UI
+	func updateDevice<T>(deviceId: UUID? = nil, key: WritableKeyPath<Device, T>, value: T) {
+		guard let deviceId = deviceId ?? self.activeConnection?.device.id else {
+			Logger.services.error("updateDevice<T> with nil deviceId")
+			return
+		}
 		if let index = devices.firstIndex(where: { $0.id == deviceId }) {
 			var device = devices[index]
 			device[keyPath: key] = value
-			devices[index] = device
+			Task { @MainActor in
+				devices[index] = device
+				if let activeConnection, activeConnection.device.id == device.id {
+					self.activeConnection = (device: device, connection: activeConnection.connection)
+				}
+			}
 		} else {
 			Logger.services.error("Device with ID \(deviceId) not found in devices list.")
 		}
 	}
-	private func updateDeviceState(deviceId: UUID, state: ConnectionState) {
-		if let index = devices.firstIndex(where: { $0.id == deviceId }) {
-			let oldDevice = devices[index]
-			devices[index] = Device(id: oldDevice.id,
-								   name: oldDevice.name,
-								   transportType: oldDevice.transportType,
-								   identifier: oldDevice.identifier,
-								   connectionState: state,
-								   rssi: oldDevice.rssi)
-		}
-	}
 
-	private func updateDeviceRSSI(deviceId: UUID, rssi: Int) {
-		if let index = devices.firstIndex(where: { $0.id == deviceId }) {
-			let oldDevice = devices[index]
-			devices[index] = Device(id: oldDevice.id,
-								   name: oldDevice.name,
-								   transportType: oldDevice.transportType,
-								   identifier: oldDevice.identifier,
-								   connectionState: oldDevice.connectionState,
-								   rssi: rssi)
+	// Update state on MainActor for presentation in the UI
+	private func updateState(_ newState: AccessoryManagerState) {
+		Task { @MainActor in
+			self.state = newState
 		}
 	}
 
@@ -272,189 +307,260 @@ class AccessoryManager: ObservableObject, PacketDelegate {
 		}
 
 	private func processFromRadio(_ decodedInfo: FromRadio) {
-		guard let activeDevice = activeConnection?.device else {
-			Logger.services.error("No active device to process packet for")
-			return
-		}
-
 		switch decodedInfo.payloadVariant {
 		case .mqttClientProxyMessage(let mqttClientProxyMessage):
-			let message = CocoaMQTTMessage(topic: mqttClientProxyMessage.topic,
-										 payload: [UInt8](mqttClientProxyMessage.data),
-										retained: mqttClientProxyMessage.retained)
-			MqttClientProxyManager.shared.mqttClientProxy?.publish(message)
+			handleMqttClientProxyMessage(mqttClientProxyMessage)
 
 		case .clientNotification(let clientNotification):
-			var path = "meshtastic:///settings/debugLogs"
-			if clientNotification.hasReplyID {
-				/// Set Sent bool on TraceRouteEntity to false if we got rate limited
-				if clientNotification.message.starts(with: "TraceRoute") {
-					let traceRoute = getTraceRoute(id: Int64(clientNotification.replyID), context: context)
-					traceRoute?.sent = false
-					do {
-						try context.save()
-						Logger.data.info("💾 [TraceRouteEntity] Trace Route Rate Limited")
-					} catch {
-						context.rollback()
-						let nsError = error as NSError
-						Logger.data.error("💥 [TraceRouteEntity] Error Updating Core Data: \(nsError, privacy: .public)")
-					}
-				}
+			handleClientNotification(clientNotification)
 
-				switch clientNotification.payloadVariant {
-				case .lowEntropyKey, .duplicatedPublicKey:
-					path = "meshtastic:///settings/security"
-				default:
-					break
+		case .myInfo(let myNodeInfo):
+			handleMyInfo(myNodeInfo)
+
+		case .packet(let packet):
+			if case let .decoded(data) = packet.payloadVariant {
+				switch data.portnum {
+				case .textMessageApp, .detectionSensorApp, .alertApp:
+					handleTextMessageAppPacket(packet)
+				case .remoteHardwareApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Remote Hardware App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+				case .positionApp:
+					upsertPositionPacket(packet: packet, context: context)
+				case .waypointApp:
+					waypointPacket(packet: packet, context: context)
+				case .nodeinfoApp:
+					upsertNodeInfoPacket(packet: packet, context: context)
+				case .routingApp:
+					guard let deviceNum = activeConnection?.device.num else {
+						Logger.mesh.error("🕸️ No active connection. Unable to determine connectedNodeNum for routingPacket.")
+						return
+					}
+					routingPacket(packet: packet, connectedNodeNum: deviceNum, context: context)
+				case .adminApp:
+					adminAppPacket(packet: packet, context: context)
+				case .replyApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Reply App handling as a text message")
+					guard let deviceNum = activeConnection?.device.num else {
+						Logger.mesh.error("🕸️ No active connection. Unable to determine connectedNodeNum for replyApp.")
+						return
+					}
+					textMessageAppPacket(packet: packet, wantRangeTestPackets: wantRangeTestPackets, connectedNode: deviceNum, context: context, appState: appState)
+				case .ipTunnelApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for IP Tunnel App UNHANDLED UNHANDLED")
+				case .serialApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Serial App UNHANDLED UNHANDLED")
+				case .storeForwardApp:
+					guard let deviceNum = activeConnection?.device.num else {
+						Logger.mesh.error("🕸️ No active connection. Unable to determine connectedNodeNum for storeAndForward.")
+						return
+					}
+					storeAndForwardPacket(packet: decodedInfo.packet, connectedNodeNum: deviceNum)
+				case .rangeTestApp:
+					guard let deviceNum = activeConnection?.device.num else {
+						Logger.mesh.error("🕸️ No active connection. Unable to determine connectedNodeNum for rangeTestApp.")
+						return
+					}
+					if wantRangeTestPackets {
+						textMessageAppPacket(
+							packet: packet,
+							wantRangeTestPackets: true,
+							connectedNode: deviceNum,
+							context: context,
+							appState: appState
+						)
+					} else {
+						Logger.mesh.info("🕸️ MESH PACKET received for Range Test App Range testing is disabled.")
+					}
+				case .telemetryApp:
+					guard let deviceNum = activeConnection?.device.num else {
+						Logger.mesh.error("🕸️ No active connection. Unable to determine connectedNodeNum for telemetryApp.")
+						return
+					}
+					telemetryPacket(packet: packet, connectedNode: deviceNum, context: context)
+				case .textMessageCompressedApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Text Message Compressed App UNHANDLED")
+				case .zpsApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Zero Positioning System App UNHANDLED")
+				case .privateApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Private App UNHANDLED UNHANDLED")
+				case .atakForwarder:
+					Logger.mesh.info("🕸️ MESH PACKET received for ATAK Forwarder App UNHANDLED UNHANDLED")
+				case .simulatorApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Simulator App UNHANDLED UNHANDLED")
+				case .audioApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Audio App UNHANDLED UNHANDLED")
+				case .tracerouteApp:
+					handleTraceRouteApp(packet)
+				case .neighborinfoApp:
+					if let neighborInfo = try? NeighborInfo(serializedBytes: decodedInfo.packet.decoded.payload) {
+						Logger.mesh.info("🕸️ MESH PACKET received for Neighbor Info App UNHANDLED \((try? neighborInfo.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+					}
+				case .paxcounterApp:
+					paxCounterPacket(packet: decodedInfo.packet, context: context)
+				case .mapReportApp:
+					Logger.mesh.info("🕸️ MESH PACKET received Map Report App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+				case .UNRECOGNIZED:
+					Logger.mesh.info("🕸️ MESH PACKET received UNRECOGNIZED App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+				case .max:
+					Logger.services.info("MAX PORT NUM OF 511")
+				case .atakPlugin:
+					Logger.mesh.info("🕸️ MESH PACKET received for ATAK Plugin App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+				case .powerstressApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Power Stress App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+				case .reticulumTunnelApp:
+					Logger.mesh.info("🕸️ MESH PACKET received for Reticulum Tunnel App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+				case .keyVerificationApp:
+					Logger.mesh.warning("🕸️ MESH PACKET received for Key Verification App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+				case .unknownApp:
+					Logger.mesh.warning("🕸️ MESH PACKET received for unknown App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
 				}
 			}
 
-			let manager = LocalNotificationManager()
-			manager.notifications = [
-				Notification(
-					id: UUID().uuidString,
-					title: "Firmware Notification".localized,
-					subtitle: "\(clientNotification.level)".capitalized,
-					content: clientNotification.message,
-					target: "settings",
-					path: path
-				)
-			]
-			manager.schedule()
-			Logger.data.error("⚠️ Client Notification: \(clientNotification.message, privacy: .public)")
+		case .nodeInfo(let nodeInfo):
+			handleNodeInfo(nodeInfo)
+
+		case .channel(let channel):
+			handleChannel(channel)
+
+		case .config(let config):
+			handleConfig(config)
+
+		case .moduleConfig(let moduleConfig):
+			handleModuleConfig(moduleConfig)
+
+		case .metadata(let metadata):
+			handleDeviceMetadata(metadata)
+
+		case .deviceuiConfig:
+			Logger.mesh.warning("🕸️ MESH PACKET received for deviceUIConfig UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+
+		case .fileInfo:
+			Logger.mesh.warning("🕸️ MESH PACKET received for fileInfo UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+
+		case .queueStatus:
+			Logger.mesh.warning("🕸️ MESH PACKET received for queueStatus UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+
+		case .configCompleteID(let configCompleteID):
+			// Not sure if we want to do anythign here directly?  The continuation stuff lets you
+			// do the next step right in the connection flow.
+
+			// switch configCompleteID {
+			// case UInt32(NONCE_ONLY_CONFIG):
+			//	break;
+			// case UInt32(NONCE_ONLY_DB):
+			// 	break;
+			// break:
+			// Logger.mesh.error("✅ [Accessory] Unknown UNHANDLED confligCompleteID: \(configCompleteID)")
+			// }
+
+			Logger.services.info("✅ [Accessory] Notifying completions that have completed for confligCompleteID: \(configCompleteID)")
+			if let continuation = wantConfigContinuations[configCompleteID] {
+				wantConfigContinuations.removeValue(forKey: configCompleteID)
+				continuation.resume()
+			}
 
 		default:
-			switch decodedInfo.packet.decoded.portnum {
-// Handle Any local only packets we get over BLE
-			case .unknownApp:
-				let haveConnectedPeripheral = self.activeConnection?.device.num != 0
-				var nowKnown = false
-				if decodedInfo.myInfo.isInitialized && decodedInfo.myInfo.myNodeNum > 0 {
-					let myInfo = myInfoPacket(myInfo: decodedInfo.myInfo, peripheralId: activeDevice.id.uuidString, context: context)
-
-					if let myInfo {
-						UserDefaults.preferredPeripheralNum = Int(myInfo.myNodeNum)
-						updateDevice(deviceId: activeDevice.id, key: \.num, value: myInfo.myNodeNum)
-						updateDevice(deviceId: activeDevice.id, key: \.name, value: myInfo.bleName ?? "Unknown".localized)
-						updateDevice(deviceId: activeDevice.id, key: \.longName, value: myInfo.bleName ?? "Unknown".localized)
-						let newConnection = Int64(UserDefaults.preferredPeripheralNum) != Int64(decodedInfo.myInfo.myNodeNum)
-						if newConnection {
-							// Onboard a new device connection here
-						}
-					}
-					// TODO: tryClearExistingChannels()
-				}
-
-				if decodedInfo.nodeInfo.num > 0 {
-					self.didReadDatabase = true
-					nowKnown = true
-					if let nodeInfo = nodeInfoPacket(nodeInfo: decodedInfo.nodeInfo, channel: decodedInfo.packet.channel, context: context) {
-						if activeDevice.num == nodeInfo.num {
-							if let user = nodeInfo.user {
-								updateDevice(deviceId: activeDevice.id, key: \.shortName, value: user.shortName ?? "?")
-								updateDevice(deviceId: activeDevice.id, key: \.longName, value: user.longName ?? "Unknown".localized)
-							}
-						}
-					}
-				}
-
-			case .textMessageApp, .detectionSensorApp:
-				break
-			case .alertApp:
-				break
-			case .remoteHardwareApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Remote Hardware App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
-			case .positionApp:
-				upsertPositionPacket(packet: decodedInfo.packet, context: context)
-			case .waypointApp:
-				waypointPacket(packet: decodedInfo.packet, context: context)
-			case .nodeinfoApp:
-				// TODO: invalidVersion
-				upsertNodeInfoPacket(packet: decodedInfo.packet, context: context)
-			case .routingApp:
-				// TODO: invalidVersion
-				if let connectedNum = activeDevice.num {
-					routingPacket(packet: decodedInfo.packet, connectedNodeNum: connectedNum, context: context)
-				}
-			case .adminApp:
-				adminAppPacket(packet: decodedInfo.packet, context: context)
-			case .replyApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Reply App handling as a text message")
-				// TODO: textMessageAppPacket(packet: decodedInfo.packet, wantRangeTestPackets: wantRangeTestPackets, connectedNode: (self.connectedPeripheral != nil ? connectedPeripheral.num : 0), context: context, appState: appState)
-			case .ipTunnelApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for IP Tunnel App UNHANDLED UNHANDLED")
-			case .serialApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Serial App UNHANDLED UNHANDLED")
-			case .storeForwardApp:
-				// TODO: storeAndForwardPacket(packet: decodedInfo.packet, connectedNodeNum: (self.connectedPeripheral != nil ? connectedPeripheral.num : 0), context: context)
-				break
-			case .rangeTestApp:
-				// TODO: RangeTest
-				break
-//				if wantRangeTestPackets {
-//					textMessageAppPacket(
-//						packet: decodedInfo.packet,
-//						wantRangeTestPackets: true,
-//						connectedNode: (self.connectedPeripheral != nil ? connectedPeripheral.num : 0),
-//						context: context,
-//						appState: appState
-//					)
-//				} else {
-//					Logger.mesh.info("🕸️ MESH PACKET received for Range Test App Range testing is disabled.")
-//				}
-			case .telemetryApp:
-				// TODO: Invalid Version?
-				telemetryPacket(packet: decodedInfo.packet, connectedNode: activeDevice.num ?? 0, context: context)
-			case .textMessageCompressedApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Text Message Compressed App UNHANDLED")
-			case .zpsApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Zero Positioning System App UNHANDLED")
-			case .privateApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Private App UNHANDLED UNHANDLED")
-			case .atakForwarder:
-				Logger.mesh.info("🕸️ MESH PACKET received for ATAK Forwarder App UNHANDLED UNHANDLED")
-			case .simulatorApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Simulator App UNHANDLED UNHANDLED")
-			case .audioApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Audio App UNHANDLED UNHANDLED")
-			case .tracerouteApp:
-				break
-			case .neighborinfoApp:
-				if let neighborInfo = try? NeighborInfo(serializedBytes: decodedInfo.packet.decoded.payload) {
-					Logger.mesh.info("🕸️ MESH PACKET received for Neighbor Info App UNHANDLED \((try? neighborInfo.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
-				}
-			case .paxcounterApp:
-				paxCounterPacket(packet: decodedInfo.packet, context: context)
-			case .mapReportApp:
-				Logger.mesh.info("🕸️ MESH PACKET received Map Report App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
-			case .UNRECOGNIZED:
-				Logger.mesh.info("🕸️ MESH PACKET received UNRECOGNIZED App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
-			case .max:
-				Logger.services.info("MAX PORT NUM OF 511")
-			case .atakPlugin:
-				Logger.mesh.info("🕸️ MESH PACKET received for ATAK Plugin App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
-			case .powerstressApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Power Stress App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
-			case .reticulumTunnelApp:
-				Logger.mesh.info("🕸️ MESH PACKET received for Reticulum Tunnel App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
-			case .keyVerificationApp:
-				Logger.mesh.warning("🕸️ MESH PACKET received for Key Verification App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
-			}
-
-			if decodedInfo.configCompleteID != 0 {
-				Logger.services.info("✅ [Accessory] Config Complete ID: \(decodedInfo.configCompleteID)")
-				if let continuation = wantConfigContinuations[decodedInfo.configCompleteID] {
-					wantConfigContinuations.removeValue(forKey: decodedInfo.configCompleteID)
-					continuation.resume()
-				}
-			}
-
+			Logger.services.error("Unknown FromRadio variant: \(decodedInfo.payloadVariant.debugDescription)")
 		}
+
 	}
 }
 
 extension AccessoryManager: RSSIDelegate {
 	func didUpdateRSSI(_ rssi: Int, for deviceId: UUID) {
-		updateDeviceRSSI(deviceId: deviceId, rssi: rssi)
+		updateDevice(deviceId: deviceId, key: \.rssi, value: rssi)
+	}
+}
+
+extension AccessoryManager {
+	func initializeLocationProvider() {
+		self.locationTask = Task {
+			repeat {
+				try? await Task.sleep(for: .seconds(30)) // sleep for 30 seconds. This throws if task is cancelled
+
+				guard let fromNodeNum = activeConnection?.device.num else {
+					return
+				}
+
+				if UserDefaults.provideLocation {
+					_ = try await sendPosition(channel: 0, destNum: fromNodeNum, wantResponse: false)
+				}
+			} while !Task.isCancelled
+		}
+	}
+
+	public func sendPosition(channel: Int32, destNum: Int64, wantResponse: Bool) async throws -> Bool {
+		guard let fromNodeNum = activeConnection?.device.num else {
+			return false
+		}
+
+		guard let positionPacket = try await getPositionFromPhoneGPS(destNum: destNum, fixedPosition: false) else {
+			Logger.services.error("Unable to get position data from device GPS to send to node")
+			return false
+		}
+
+		var meshPacket = MeshPacket()
+		meshPacket.to = UInt32(destNum)
+		meshPacket.channel = UInt32(channel)
+		meshPacket.from	= UInt32(fromNodeNum)
+		var dataMessage = DataMessage()
+		if let serializedData: Data = try? positionPacket.serializedData() {
+			dataMessage.payload = serializedData
+			dataMessage.portnum = PortNum.positionApp
+			dataMessage.wantResponse = wantResponse
+			meshPacket.decoded = dataMessage
+		} else {
+			Logger.services.error("Failed to serialize position packet data")
+			return false
+		}
+
+		var toRadio: ToRadio!
+		toRadio = ToRadio()
+		toRadio.packet = meshPacket
+		try await self.send(data: toRadio)
+		return true
+	}
+
+	public func getPositionFromPhoneGPS(destNum: Int64, fixedPosition: Bool) async throws -> Position? {
+		return await withCheckedContinuation { cont in
+			Task { @MainActor in
+				var positionPacket = Position()
+
+				guard let lastLocation = LocationsHandler.shared.locationsArray.last else {
+					cont.resume(returning: nil)
+					return
+				}
+
+				if lastLocation == CLLocation(latitude: 0, longitude: 0) {
+					cont.resume(returning: nil)
+					return
+				}
+
+				positionPacket.latitudeI = Int32(lastLocation.coordinate.latitude * 1e7)
+				positionPacket.longitudeI = Int32(lastLocation.coordinate.longitude * 1e7)
+				let timestamp = lastLocation.timestamp
+				positionPacket.time = UInt32(timestamp.timeIntervalSince1970)
+				positionPacket.timestamp = UInt32(timestamp.timeIntervalSince1970)
+				positionPacket.altitude = Int32(lastLocation.altitude)
+				positionPacket.satsInView = UInt32(LocationsHandler.satsInView)
+				let currentSpeed = lastLocation.speed
+				if currentSpeed > 0 && (!currentSpeed.isNaN || !currentSpeed.isInfinite) {
+					positionPacket.groundSpeed = UInt32(currentSpeed)
+				}
+				let currentHeading = lastLocation.course
+				if (currentHeading > 0  && currentHeading <= 360) && (!currentHeading.isNaN || !currentHeading.isInfinite) {
+					positionPacket.groundTrack = UInt32(currentHeading)
+				}
+				/// Set location source for time
+				if !fixedPosition {
+					/// From GPS treat time as good
+					positionPacket.locationSource = Position.LocSource.locExternal
+				} else {
+					/// From GPS, but time can be old and have drifted
+					positionPacket.locationSource = Position.LocSource.locManual
+				}
+				cont.resume(returning: positionPacket)
+			}
+		}
 	}
 }

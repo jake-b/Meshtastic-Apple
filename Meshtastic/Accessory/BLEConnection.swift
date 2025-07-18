@@ -54,7 +54,9 @@ class BLEConnection: NSObject, WirelessConnection, CBPeripheralDelegate {
 
 	var isConnected: Bool { peripheral.state == .connected }
 
-	private let drainActor: DrainActor = DrainActor()
+	private var needsDrain: Bool = false
+	private var isDraining: Bool = false
+	private var drainCompletionContinuations: [CheckedContinuation<Void, Never>] = []
 
 	init(peripheral: CBPeripheral, central: CBCentralManager, readyCallback: @escaping (Result<Void, Error>) -> Void) {
 		self.peripheral = peripheral
@@ -114,7 +116,72 @@ class BLEConnection: NSObject, WirelessConnection, CBPeripheralDelegate {
 		guard isConnected else {
 			throw AccessoryError.ioFailed("Not connected")
 		}
-		await drainActor.triggerDrain(connection: self)
+		await withCheckedContinuation { cont in
+			drainCompletionContinuations.append(cont)
+			needsDrain = true
+			if !isDraining {
+				Task {
+					await performDrain()
+				}
+			}
+		}
+	}
+
+	func startDrainPendingPackets() throws {
+		guard isConnected else {
+			throw AccessoryError.ioFailed("Not connected")
+		}
+		needsDrain = true
+		if !isDraining {
+			Task {
+				await performDrain()
+			}
+		}
+	}
+
+	private func performDrain() async {
+		isDraining = true
+		defer {
+			isDraining = false
+			for cont in drainCompletionContinuations {
+				cont.resume()
+			}
+			drainCompletionContinuations = []
+		}
+
+		guard let characteristic = FROMRADIO_characteristic else { return }
+
+		let peripheral = self.peripheral
+
+		while needsDrain {
+			needsDrain = false
+			repeat {
+				do {
+					let data = try await withCheckedThrowingContinuation { cont in
+						readContinuation = cont
+						peripheral.readValue(for: characteristic)
+					}
+					if data.isEmpty {
+						Logger.services.error("[BLE] Received empty data, ending drain operation.")
+						break
+					}
+
+					do {
+						let decodedInfo = try FromRadio(serializedBytes: data)
+						packetDelegate?.didReceive(result: .success(decodedInfo))
+					} catch {
+						Logger.services.error("💥 \(error.localizedDescription, privacy: .public) \(characteristic.value ?? Data(), privacy: .public)")
+						packetDelegate?.didReceive(result: .failure(error))
+					}
+
+					// Update RSSI when new data comes in
+					peripheral.readRSSI()
+				} catch {
+					packetDelegate?.didReceive(result: .failure(error))
+					break
+				}
+			} while true
+		}
 	}
 
 	// MARK: CBPeripheralDelegate
@@ -205,7 +272,10 @@ class BLEConnection: NSObject, WirelessConnection, CBPeripheralDelegate {
 			}
 		case FROMNUM_UUID:
 			Task {
-				await drainActor.triggerDrain(connection: self)
+				needsDrain = true
+				if !isDraining {
+					await performDrain()
+				}
 			}
 		case LOGRADIO_UUID:
 		// TODO: Yield to a log stream if needed
@@ -235,55 +305,4 @@ class BLEConnection: NSObject, WirelessConnection, CBPeripheralDelegate {
 		rssiDelegate?.didUpdateRSSI(RSSI.intValue, for: peripheral.identifier)
 	}
 
-}
-
-actor DrainActor {
-	private var needsDrain: Bool = false
-	private var isDraining: Bool = false
-
-	func triggerDrain(connection: BLEConnection) async {
-		needsDrain = true
-		if !isDraining {
-			await performDrain(connection: connection)
-		}
-	}
-
-	private func performDrain(connection: BLEConnection) async {
-		isDraining = true
-		defer { isDraining = false }
-
-		guard let characteristic = connection.FROMRADIO_characteristic else { return }
-
-		let peripheral = connection.peripheral
-
-		while needsDrain {
-			needsDrain = false
-			repeat {
-				do {
-					let data = try await withCheckedThrowingContinuation { cont in
-						connection.readContinuation = cont
-						peripheral.readValue(for: characteristic)
-					}
-					if data.isEmpty {
-						Logger.services.error("[BLE] Receeived empty data, ending drain operation.")
-						break
-					}
-
-					do {
-						let decodedInfo = try FromRadio(serializedBytes: data)
-						connection.packetDelegate?.didReceive(result: .success(decodedInfo))
-					} catch {
-						Logger.services.error("💥 \(error.localizedDescription, privacy: .public) \(characteristic.value!, privacy: .public)")
-						connection.packetDelegate?.didReceive(result: .failure(error))
-					}
-
-					// Update RSSI when new data comes in
-					peripheral.readRSSI()
-				} catch {
-					connection.packetDelegate?.didReceive(result: .failure(error))
-					break
-				}
-			} while true
-		}
-	}
 }
