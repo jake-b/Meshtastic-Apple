@@ -4546,6 +4546,7 @@
       }
     },
     "Bluetooth is off" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

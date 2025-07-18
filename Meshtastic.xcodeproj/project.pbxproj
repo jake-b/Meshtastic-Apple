@@ -27,9 +27,16 @@
 		2344A2AF2D6697A700170A77 /* TelemetryEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2344A2AD2D6697A700170A77 /* TelemetryEntity+CoreDataClass.swift */; };
 		2344A2B02D6697A700170A77 /* TelemetryEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2344A2AE2D6697A700170A77 /* TelemetryEntity+CoreDataProperties.swift */; };
 		2344A2B12D68DFF800170A77 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C49D8F2C471AEA0024FBD1 /* Constants.swift */; };
+		235CA7392E293FFA00A329AA /* MeshPacketHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 235CA7382E293FFA00A329AA /* MeshPacketHandler.swift */; };
 		2373AE132D0A216C0086C749 /* MetricsChartSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE122D0A216C0086C749 /* MetricsChartSeries.swift */; };
 		2373AE152D0A24930086C749 /* MetricsSeriesList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE142D0A24930086C749 /* MetricsSeriesList.swift */; };
 		2373AE172D0A26620086C749 /* EnvironmentDefaultSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE162D0A26620086C749 /* EnvironmentDefaultSeries.swift */; };
+		237AEB8F2E1FE457003B7CE3 /* Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237AEB8E2E1FE456003B7CE3 /* Transport.swift */; };
+		237AEB912E1FE46D003B7CE3 /* AccessoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237AEB902E1FE46D003B7CE3 /* AccessoryManager.swift */; };
+		237AEB932E1FE4BA003B7CE3 /* Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237AEB922E1FE4BA003B7CE3 /* Connection.swift */; };
+		237AEB952E1FE516003B7CE3 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237AEB942E1FE516003B7CE3 /* Device.swift */; };
+		237AEB972E1FE627003B7CE3 /* BLETransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237AEB962E1FE627003B7CE3 /* BLETransport.swift */; };
+		237AEB992E20098B003B7CE3 /* BLEConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237AEB982E20098B003B7CE3 /* BLEConnection.swift */; };
 		237B46962DC8F1C100B22D99 /* RateLimitedButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237B46952DC8F1C100B22D99 /* RateLimitedButton.swift */; };
 		251926852C3BA97800249DF5 /* FavoriteNodeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 251926842C3BA97800249DF5 /* FavoriteNodeButton.swift */; };
 		251926872C3BAE2200249DF5 /* NodeAlertsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 251926862C3BAE2200249DF5 /* NodeAlertsButton.swift */; };
@@ -303,9 +310,16 @@
 		2344A2AA2D66973D00170A77 /* ManagedAttributePropertyWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedAttributePropertyWrapper.swift; sourceTree = "<group>"; };
 		2344A2AD2D6697A700170A77 /* TelemetryEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TelemetryEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
 		2344A2AE2D6697A700170A77 /* TelemetryEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TelemetryEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		235CA7382E293FFA00A329AA /* MeshPacketHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshPacketHandler.swift; sourceTree = "<group>"; };
 		2373AE122D0A216C0086C749 /* MetricsChartSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsChartSeries.swift; sourceTree = "<group>"; };
 		2373AE142D0A24930086C749 /* MetricsSeriesList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsSeriesList.swift; sourceTree = "<group>"; };
 		2373AE162D0A26620086C749 /* EnvironmentDefaultSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentDefaultSeries.swift; sourceTree = "<group>"; };
+		237AEB8E2E1FE456003B7CE3 /* Transport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transport.swift; sourceTree = "<group>"; };
+		237AEB902E1FE46D003B7CE3 /* AccessoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryManager.swift; sourceTree = "<group>"; };
+		237AEB922E1FE4BA003B7CE3 /* Connection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connection.swift; sourceTree = "<group>"; };
+		237AEB942E1FE516003B7CE3 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
+		237AEB962E1FE627003B7CE3 /* BLETransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLETransport.swift; sourceTree = "<group>"; };
+		237AEB982E20098B003B7CE3 /* BLEConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConnection.swift; sourceTree = "<group>"; };
 		237B46952DC8F1C100B22D99 /* RateLimitedButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateLimitedButton.swift; sourceTree = "<group>"; };
 		251926842C3BA97800249DF5 /* FavoriteNodeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteNodeButton.swift; sourceTree = "<group>"; };
 		251926862C3BAE2200249DF5 /* NodeAlertsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeAlertsButton.swift; sourceTree = "<group>"; };
@@ -658,6 +672,20 @@
 			path = CoreData;
 			sourceTree = "<group>";
 		};
+		237AEB8D2E1FE120003B7CE3 /* Accessory */ = {
+			isa = PBXGroup;
+			children = (
+				237AEB8E2E1FE456003B7CE3 /* Transport.swift */,
+				237AEB922E1FE4BA003B7CE3 /* Connection.swift */,
+				237AEB942E1FE516003B7CE3 /* Device.swift */,
+				237AEB902E1FE46D003B7CE3 /* AccessoryManager.swift */,
+				237AEB962E1FE627003B7CE3 /* BLETransport.swift */,
+				237AEB982E20098B003B7CE3 /* BLEConnection.swift */,
+				235CA7382E293FFA00A329AA /* MeshPacketHandler.swift */,
+			);
+			path = Accessory;
+			sourceTree = "<group>";
+		};
 		251926882C3BAF2E00249DF5 /* Actions */ = {
 			isa = PBXGroup;
 			children = (
@@ -969,6 +997,7 @@
 		DDC2E15626CE248E0042C5E4 /* Meshtastic */ = {
 			isa = PBXGroup;
 			children = (
+				237AEB8D2E1FE120003B7CE3 /* Accessory */,
 				BCB6137F2C6728E700485544 /* AppIntents */,
 				DD1BD0EC2C603C5B008C0C70 /* Measurement */,
 				25F5D5BC2C3F6D7B008036E3 /* Router */,
@@ -1366,7 +1395,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [[ \"$(uname -m)\" == arm64 ]]\nthen\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif command -v swiftlint >/dev/null 2>&1\nthen\n    swiftlint\nelse\n    echo \"warning: `swiftlint` command not found - See https://github.com/realm/SwiftLint#installation for installation instructions.\"\nfi\n";
+			shellScript = "if [[ \"$(uname -m)\" == arm64 ]]\nthen\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif command -v swiftlint >/dev/null 2>&1\nthen\n    swiftlint --fix\nelse\n    echo \"warning: `swiftlint` command not found - See https://github.com/realm/SwiftLint#installation for installation instructions.\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1404,6 +1433,7 @@
 				DD5D0A9C2931B9F200F7EA61 /* EthernetModes.swift in Sources */,
 				6DEDA55A2A957B8E00321D2E /* DetectionSensorLog.swift in Sources */,
 				DD798B072915928D005217CD /* ChannelMessageList.swift in Sources */,
+				237AEB992E20098B003B7CE3 /* BLEConnection.swift in Sources */,
 				231B3F272D0885240069A07D /* MetricsColumnDetail.swift in Sources */,
 				DDC2E1A726CEB3400042C5E4 /* LocationHelper.swift in Sources */,
 				DD77093D2AA1AFA3007A8BF0 /* ChannelTips.swift in Sources */,
@@ -1420,7 +1450,9 @@
 				DD41A61529AB0035003C5A37 /* NodeWeatherForecast.swift in Sources */,
 				DDB6ABD628AE742000384BA1 /* BluetoothConfig.swift in Sources */,
 				251926902C3CB44900249DF5 /* ClientHistoryButton.swift in Sources */,
+				237AEB932E1FE4BA003B7CE3 /* Connection.swift in Sources */,
 				DDD5BB102C285FB3007E03CA /* AppLogFilter.swift in Sources */,
+				237AEB952E1FE516003B7CE3 /* Device.swift in Sources */,
 				2373AE172D0A26620086C749 /* EnvironmentDefaultSeries.swift in Sources */,
 				233E99B82D849C6500CC3A77 /* HumidityCompactWidget.swift in Sources */,
 				DD4640202AFF10F4002A5ECB /* WaypointForm.swift in Sources */,
@@ -1454,6 +1486,7 @@
 				DDDB263F2AABEE20003AFCB7 /* NodeList.swift in Sources */,
 				DDD5BB0B2C285E45007E03CA /* LogDetail.swift in Sources */,
 				DDA0B6B2294CDC55001356EC /* Channels.swift in Sources */,
+				237AEB972E1FE627003B7CE3 /* BLETransport.swift in Sources */,
 				DDE9659C2B1C3B6A00531070 /* RouteRecorder.swift in Sources */,
 				B399E8A42B6F486400E4488E /* RetryButton.swift in Sources */,
 				DDB8F4102A9EE5B400230ECE /* Messages.swift in Sources */,
@@ -1471,6 +1504,7 @@
 				DD1BD0EB2C601795008C0C70 /* CLLocation.swift in Sources */,
 				DDF924CA26FBB953009FE055 /* ConnectedDevice.swift in Sources */,
 				DD3CC6BE28E4CD9800FA9159 /* BatteryGauge.swift in Sources */,
+				237AEB912E1FE46D003B7CE3 /* AccessoryManager.swift in Sources */,
 				DD6193772862F90F00E59241 /* CannedMessagesConfig.swift in Sources */,
 				DD3619152B1EF9F900C41C8C /* LocationsHandler.swift in Sources */,
 				DD6F65792C6EADE60053C113 /* DirectMessagesHelp.swift in Sources */,
@@ -1510,6 +1544,7 @@
 				DD1BD0EE2C603C91008C0C70 /* CustomFormatters.swift in Sources */,
 				DD0BE3102CB9FDC4000BA445 /* DetectionSensorEnums.swift in Sources */,
 				DDD9E4E4284B208E003777C5 /* UserEntityExtension.swift in Sources */,
+				235CA7392E293FFA00A329AA /* MeshPacketHandler.swift in Sources */,
 				233E99CB2D85AAA900CC3A77 /* RainfallCompactWidget.swift in Sources */,
 				DD2553592855B52700E55709 /* PositionConfig.swift in Sources */,
 				DD97E96828EFE9A00056DDA4 /* About.swift in Sources */,
@@ -1589,6 +1624,7 @@
 				2344A2AF2D6697A700170A77 /* TelemetryEntity+CoreDataClass.swift in Sources */,
 				2344A2B02D6697A700170A77 /* TelemetryEntity+CoreDataProperties.swift in Sources */,
 				D9C983A22B79D1A600BDBE6A /* RequestPositionButton.swift in Sources */,
+				237AEB8F2E1FE457003B7CE3 /* Transport.swift in Sources */,
 				DDDB26442AAC0206003AFCB7 /* NodeDetail.swift in Sources */,
 				DD77093F2AA1B146007A8BF0 /* UIColor.swift in Sources */,
 				DDF6B2482A9AEBF500BA6931 /* StoreForwardConfig.swift in Sources */,

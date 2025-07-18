@@ -17,7 +17,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 
 	let context: NSManagedObjectContext
 
-	private var centralManager: CBCentralManager!
+	private var centralManager: CBCentralManager?
 
 	@Published var peripherals: [Peripheral] = []
 	@Published var connectedPeripheral: Peripheral!
@@ -85,7 +85,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 		self.lastConnectionError = ""
 		self.connectedVersion = "0.0.0"
 		super.init()
-		centralManager = CBCentralManager(delegate: self, queue: nil)
+		centralManager = nil // CBCentralManager(delegate: self, queue: nil)
 		mqttManager.delegate = self
 		// Run clearStaleNodes every hour
 		maintenanceTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true, block: { _ in
@@ -101,15 +101,15 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 	// Scan for nearby BLE devices using the Meshtastic BLE service ID
 	func startScanning() {
 		if isSwitchedOn {
-			centralManager.scanForPeripherals(withServices: [meshtasticServiceCBUUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+			centralManager?.scanForPeripherals(withServices: [meshtasticServiceCBUUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
 			Logger.services.info("✅ [BLE] Scanning Started")
 		}
 	}
 
 	// Stop Scanning For BLE Devices
 	func stopScanning() {
-		if centralManager.isScanning {
-			centralManager.stopScan()
+		if centralManager?.isScanning ?? false {
+			centralManager?.stopScan()
 			Logger.services.info("🛑 [BLE] Stopped Scanning")
 		}
 	}
@@ -367,7 +367,6 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 			case FROMRADIO_UUID:
 				Logger.services.info("✅ [BLE] did discover FROMRADIO characteristic for Meshtastic by \(peripheral.name ?? "Unknown", privacy: .public)")
 				FROMRADIO_characteristic = characteristic
-				peripheral.readValue(for: FROMRADIO_characteristic)
 
 			case FROMNUM_UUID:
 				Logger.services.info("✅ [BLE] did discover FROMNUM (Notify) characteristic for Meshtastic by \(peripheral.name ?? "Unknown", privacy: .public)")
@@ -560,7 +559,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 		 connectedPeripheral!.peripheral.writeValue(binaryData, for: TORADIO_characteristic, type: .withResponse)
 		 // Either Read the config complete value or from num notify value
 		 guard connectedPeripheral != nil else { return }
-		 connectedPeripheral!.peripheral.readValue(for: FROMRADIO_characteristic)
+
 		 // Start timeout timer
 		 startWantConfigTimeout()
 	 }
@@ -1119,7 +1118,6 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 					sendWantConfig()
 
 				}
-				
 
 				// MARK: Share Location Position Update Timer
 				// Use context to pass the radio name with the timer

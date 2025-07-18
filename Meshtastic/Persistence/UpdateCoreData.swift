@@ -1380,7 +1380,7 @@ func upsertRangeTestModuleConfigPacket(config: ModuleConfig.RangeTestConfig, nod
 			do {
 				try context.save()
 				Logger.data.info("💾 [RangeTestConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
-			
+
 			} catch {
 				context.rollback()
 				let nsError = error as NSError

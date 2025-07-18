@@ -101,7 +101,7 @@ struct MessageText: View {
 			Logger.services.error("No valid components found in channel URL: \(url.absoluteString, privacy: .public)")
 			return .discarded
 		}
-		
+
 		self.addChannels = Bool(url.query?.contains("add=true") ?? false)
 		guard let lastComponent = components.last else {
 			Logger.services.error("Channel URL missing fragment component: \(url.absoluteString, privacy: .public)")
@@ -111,16 +111,15 @@ struct MessageText: View {
 
 		self.channelSettings = lastComponent.components(separatedBy: "?").first ?? ""
 
-		
 		Logger.services.debug("Add Channel: \(self.addChannels, privacy: .public)")
 			self.saveChannels = true
 		Logger.mesh.debug("Opening Channel Settings URL: \(url.absoluteString, privacy: .public)")
 		return .handled // Prevent default browser opening
 	}
-	
+
 	return .systemAction // Open other URLs in browser
 })
-				  
+
 				  // Display sheet for channel settings
 			.sheet(isPresented: Binding(
 				get: {

@@ -20,6 +20,7 @@ struct Connect: View {
 
 	@Environment(\.managedObjectContext) var context
 	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@State var node: NodeInfoEntity?
 	@State var isUnsetRegion = false
 	@State var invalidFirmwareVersion = false
@@ -45,7 +46,7 @@ struct Connect: View {
 		NavigationStack {
 			VStack {
 				List {
-					if bleManager.isSwitchedOn {
+					// if bleManager.isSwitchedOn {
 						Section {
 							if let connectedPeripheral = bleManager.connectedPeripheral, connectedPeripheral.peripheral.state == .connected {
 								TipView(BluetoothConnectionTip(), arrowEdge: .bottom)
@@ -210,9 +211,9 @@ struct Connect: View {
 
 						if !self.bleManager.isConnected {
 							Section(header: Text("Available Radios").font(.title)) {
-								ForEach(bleManager.peripherals.filter({ $0.peripheral.state == CBPeripheralState.disconnected }).sorted(by: { $0.name < $1.name })) { peripheral in
+								ForEach(accessoryManager.devices.sorted(by: { $0.name < $1.name })) { device in
 									HStack {
-										if UserDefaults.preferredPeripheralId == peripheral.peripheral.identifier.uuidString {
+										if UserDefaults.preferredPeripheralId == device.id.uuidString {
 											Image(systemName: "star.fill")
 												.imageScale(.large).foregroundColor(.yellow)
 												.padding(.trailing)
@@ -222,21 +223,24 @@ struct Connect: View {
 												.padding(.trailing)
 										}
 										Button(action: {
-											if UserDefaults.preferredPeripheralId.count > 0 && peripheral.peripheral.identifier.uuidString != UserDefaults.preferredPeripheralId {
-												if let connectedPeripheral = bleManager.connectedPeripheral, connectedPeripheral.peripheral.state == CBPeripheralState.connected {
-													bleManager.disconnectPeripheral()
-												}
+											if UserDefaults.preferredPeripheralId.count > 0 && device.id.uuidString != UserDefaults.preferredPeripheralId {
+//												if let connectedPeripheral = bleManager.connectedPeripheral, connectedPeripheral.peripheral.state == CBPeripheralState.connected {
+//													bleManager.disconnectPeripheral()
+//												}
 												presentingSwitchPreferredPeripheral = true
-												selectedPeripherialId = peripheral.peripheral.identifier.uuidString
+												selectedPeripherialId = device.id.uuidString
 											} else {
-												self.bleManager.connectTo(peripheral: peripheral.peripheral)
+												Task {
+													try? await accessoryManager.connect(to: device)
+												}
+												// self.bleManager.connectTo(peripheral: peripheral.peripheral)
 											}
 										}) {
-											Text(peripheral.name).font(.callout)
+											Text(device.name).font(.callout)
 										}
 										Spacer()
 										VStack {
-											SignalStrengthIndicator(signalStrength: peripheral.getSignalStrength())
+											device.getSignalStrength().map { SignalStrengthIndicator(signalStrength: $0) }
 										}
 									}.padding([.bottom, .top])
 								}
@@ -258,11 +262,11 @@ struct Connect: View {
 							.textCase(nil)
 						}
 
-					} else {
-						Text("Bluetooth is off")
-							.foregroundColor(.red)
-							.font(.title)
-					}
+//					} else {
+//						Text("Bluetooth is off")
+//							.foregroundColor(.red)
+//							.font(.title)
+//					}
 				}
 
 				HStack(alignment: .center) {

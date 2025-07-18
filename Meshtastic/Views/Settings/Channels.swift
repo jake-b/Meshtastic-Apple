@@ -241,7 +241,7 @@ struct Channels: View {
 					#endif
 				}
 			}
-			
+
 			if node?.myInfo?.channels?.array.count ?? 0 < 8 && node != nil {
 
 				Button {

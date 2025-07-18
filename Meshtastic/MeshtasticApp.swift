@@ -14,7 +14,7 @@ struct MeshtasticAppleApp: App {
 	@ObservedObject	var appState: AppState
 
 	private let persistenceController: PersistenceController
-
+	private let accessoryManager: AccessoryManager
 	@Environment(\.scenePhase) var scenePhase
 	@State var saveChannels = false
 	@State var incomingUrl: URL?
@@ -23,12 +23,15 @@ struct MeshtasticAppleApp: App {
 
 	init() {
 		let persistenceController = PersistenceController.shared
+		accessoryManager = AccessoryManager()
 		let appState = AppState(
-			router: Router()
+			router: Router(),
+			accessoryManager: accessoryManager
 		)
 		self._appState = ObservedObject(wrappedValue: appState)
 		// Initialize the BLEManager singleton with the necessary dependencies
 		BLEManager.setup(appState: appState, context: persistenceController.container.viewContext)
+
 		self.persistenceController = persistenceController
 		// Wire up router
 		self.appDelegate.router = appState.router
@@ -36,6 +39,7 @@ struct MeshtasticAppleApp: App {
 		// Show tips in development
 		try? Tips.resetDatastore()
 	#endif
+		appState.accessoryManager.startDiscovery()
 	}
     var body: some Scene {
         WindowGroup {
@@ -154,6 +158,7 @@ struct MeshtasticAppleApp: App {
 		.environment(\.managedObjectContext, persistenceController.container.viewContext)
 		.environmentObject(appState)
 		.environmentObject(BLEManager.shared)
+		.environmentObject(accessoryManager)
 	}
 
 }

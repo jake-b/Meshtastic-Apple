@@ -122,7 +122,7 @@ struct NodeDetail: View {
 						.textSelection(.enabled)
 					}
 					.accessibilityElement(children: .combine)
-				
+
 					if node.user?.keyMatch ?? false {
 						if let publicKey = node.user?.publicKey {
 							HStack {
@@ -134,7 +134,7 @@ struct NodeDetail: View {
 								}
 								Spacer()
 								Button(action: {
-									context.perform{
+									context.perform {
 										UIPasteboard.general.string = publicKey.base64EncodedString()
 									}
 								}) {

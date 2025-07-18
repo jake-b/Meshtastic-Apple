@@ -22,7 +22,6 @@ struct SaveChannelQRCode: View {
 	@State private var connectedToDevice: Bool = false
 	@State private var loraChanges: [String] = []
 	@State private var okToMQTT: Bool = false
-	
 
 	var body: some View {
 		VStack {
@@ -72,7 +71,7 @@ struct SaveChannelQRCode: View {
 						} else {
 							channelData = channelSetLink
 						}
-						
+
 						let success = bleManager.saveChannelSet(base64UrlString: channelData, addChannels: addChannels, okToMQTT: okToMQTT)
 						if success {
 							dismiss()
@@ -119,11 +118,10 @@ struct SaveChannelQRCode: View {
 			fetchLoRaConfigChanges()
 		}
 	}
-	
+
 	private func extractChannelDataFromURL(_ urlString: String) -> String? {
 		Logger.data.info("Extracting channel data from URL: \(urlString)")
-		
-		
+
 		if let url = URL(string: urlString) {
 			// Get the fragment (part after #)
 			if let fragment = url.fragment, !fragment.isEmpty {
@@ -131,7 +129,7 @@ struct SaveChannelQRCode: View {
 				return fragment
 			}
 		}
-		
+
 		// Fallback: manually extract everything after the last #
 		if let hashIndex = urlString.lastIndex(of: "#") {
 			let startIndex = urlString.index(after: hashIndex)
@@ -141,11 +139,11 @@ struct SaveChannelQRCode: View {
 				return channelData
 			}
 		}
-		
+
 		Logger.data.error("Failed to extract channel data from URL: \(urlString)")
 		return nil
 	}
-	
+
 	private func fetchLoRaConfigChanges() {
 		var currentLoRaConfig: Config.LoRaConfig?
 
@@ -163,7 +161,7 @@ struct SaveChannelQRCode: View {
 			// Assume it's already the base64 data
 			channelData = channelSetLink
 		}
-		
+
 		Logger.data.info("Processing channel data: \(channelData)")
 
 		// Fetch current LoRa config from Core Data
@@ -244,7 +242,7 @@ struct SaveChannelQRCode: View {
 			} else {
 				// Compare against default values when no current config exists
 				let defaultConfig = getDefaultLoRaConfig()
-				
+
 				if newLoRaConfig.hopLimit != defaultConfig.hopLimit {
 					changes.append("Hop Limit: \(defaultConfig.hopLimit) -> \(newLoRaConfig.hopLimit)")
 				}
@@ -296,7 +294,7 @@ struct SaveChannelQRCode: View {
 			showError = true
 		}
 	}
-	
+
 	private func getDefaultLoRaConfig() -> Config.LoRaConfig {
 		var config = Config.LoRaConfig()
 		config.hopLimit = 3
