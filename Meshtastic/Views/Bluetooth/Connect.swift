@@ -261,7 +261,6 @@ struct Connect: View {
 										Task { await accessoryManager.disconnect() }
 									}
 									clearCoreDataDatabase(context: context, includeRoutes: false)
-									let
 									if let radio = accessoryManager.devices.first(where: { $0.id.uuidString == selectedPeripherialId }) {
 										Task {
 											await accessoryManager.connect(to: radio)
@@ -282,7 +281,7 @@ struct Connect: View {
 				HStack(alignment: .center) {
 					Spacer()
 					#if targetEnvironment(macCatalyst)
-					//TODO: should this be allowDisconnect?
+					// TODO: should this be allowDisconnect?
 					if accessoryManager.isConnected {
 						Button(role: .destructive, action: {
 							if accessoryManager.isConnected {
@@ -340,7 +339,7 @@ struct Connect: View {
 //		}
 		.onChange(of: self.accessoryManager.state) { _, state in
 
-			if let deviceNum = accessoryManager.activeDeviceNum, UserDefaults.preferredPeripheralId.count > 0 && state == .subscribed  {
+			if let deviceNum = accessoryManager.activeDeviceNum, UserDefaults.preferredPeripheralId.count > 0 && state == .subscribed {
 
 				let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
 				fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", deviceNum)
@@ -405,7 +404,7 @@ struct Connect: View {
 #endif
 #endif
 	func didDismissSheet() {
-		//bleManager.disconnectPeripheral(reconnect: false)
+		// bleManager.disconnectPeripheral(reconnect: false)
 		Task {
 			try await accessoryManager.disconnect()
 		}

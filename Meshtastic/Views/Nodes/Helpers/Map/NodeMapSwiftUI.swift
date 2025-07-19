@@ -11,6 +11,7 @@ import MapKit
 
 struct NodeMapSwiftUI: View {
 	@Environment(\.managedObjectContext) var context
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	/// Parameters
 	@ObservedObject var node: NodeInfoEntity
 	@State var showUserLocation: Bool = false

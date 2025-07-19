@@ -1180,7 +1180,7 @@ extension AccessoryManager {
 		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
 	}
 
-	public func requestRtttlConfig(fromUser: UserEntity, toUser: UserEntity) async throws -> Bool {
+	public func requestRtttlConfig(fromUser: UserEntity, toUser: UserEntity) async throws {
 
 		var adminPacket = AdminMessage()
 		adminPacket.getRingtoneRequest = true
@@ -1205,7 +1205,7 @@ extension AccessoryManager {
 		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
 	}
 
-	public func requestRangeTestModuleConfig(fromUser: UserEntity, toUser: UserEntity) async throws -> Bool {
+	public func requestRangeTestModuleConfig(fromUser: UserEntity, toUser: UserEntity) async throws {
 
 		var adminPacket = AdminMessage()
 		adminPacket.getModuleConfigRequest = AdminMessage.ModuleConfigType.rangetestConfig
@@ -1659,6 +1659,119 @@ extension AccessoryManager {
 		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
 		Task { @MainActor in
 			upsertSecurityConfigPacket(config: config, nodeNum: toUser.num, context: context)
+		}
+		return Int64(meshPacket.id)
+	}
+
+	public func requestTelemetryModuleConfig(fromUser: UserEntity, toUser: UserEntity, adminIndex: Int32) async throws {
+
+		var adminPacket = AdminMessage()
+		adminPacket.getModuleConfigRequest = AdminMessage.ModuleConfigType.telemetryConfig
+		adminPacket.sessionPasskey = toUser.userNode?.sessionPasskey ?? Data()
+		var meshPacket: MeshPacket = MeshPacket()
+		meshPacket.to = UInt32(toUser.num)
+		meshPacket.from	= UInt32(fromUser.num)
+		meshPacket.id = UInt32.random(in: UInt32(UInt8.max)..<UInt32.max)
+		meshPacket.priority =  MeshPacket.Priority.reliable
+		meshPacket.channel = UInt32(adminIndex)
+		meshPacket.wantAck = true
+
+		var dataMessage = DataMessage()
+		guard let adminData: Data = try? adminPacket.serializedData() else {
+			throw AccessoryError.ioFailed("requestTelemetryModuleConfig: Unable to serialize admin packet")
+		}
+		dataMessage.payload = adminData
+		dataMessage.portnum = PortNum.adminApp
+		dataMessage.wantResponse = true
+
+		meshPacket.decoded = dataMessage
+
+		let messageDescription = "🛎️ Requested Telemetry Module Config on admin channel \(adminIndex) for node: \(toUser.longName ?? "unknown".localized)"
+		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
+	}
+
+	public func sendNodeDBReset(fromUser: UserEntity, toUser: UserEntity) async throws {
+		var adminPacket = AdminMessage()
+		adminPacket.nodedbReset = 5
+		if fromUser != toUser {
+			adminPacket.sessionPasskey = toUser.userNode?.sessionPasskey ?? Data()
+		}
+		var meshPacket: MeshPacket = MeshPacket()
+		meshPacket.to = UInt32(toUser.num)
+		meshPacket.from	= 0 // UInt32(fromUser.num)
+		meshPacket.id = UInt32.random(in: UInt32(UInt8.max)..<UInt32.max)
+		meshPacket.priority =  MeshPacket.Priority.reliable
+		meshPacket.wantAck = true
+		var dataMessage = DataMessage()
+		guard let adminData: Data = try? adminPacket.serializedData() else {
+			throw AccessoryError.ioFailed("sendNodeDBReset: Unable to serialize admin packet")
+		}
+		dataMessage.payload = adminData
+		dataMessage.portnum = PortNum.adminApp
+
+		meshPacket.decoded = dataMessage
+		let messageDescription = "🚀 Sent NodeDB Reset Admin Message to: \(toUser.longName ?? "unknown".localized) from: \(fromUser.longName ?? "unknown".localized)"
+		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
+	}
+
+	public func requestBluetoothConfig(fromUser: UserEntity, toUser: UserEntity, adminIndex: Int32? = nil) async throws {
+
+		var adminPacket = AdminMessage()
+		adminPacket.getConfigRequest = AdminMessage.ConfigType.bluetoothConfig
+		if UserDefaults.enableAdministration {
+			adminPacket.sessionPasskey = toUser.userNode?.sessionPasskey ?? Data()
+		}
+		var meshPacket: MeshPacket = MeshPacket()
+		meshPacket.to = UInt32(toUser.num)
+		meshPacket.from	= UInt32(fromUser.num)
+		meshPacket.id = UInt32.random(in: UInt32(UInt8.max)..<UInt32.max)
+		meshPacket.priority =  MeshPacket.Priority.reliable
+		if let adminIndex = adminIndex {
+			meshPacket.channel = UInt32(adminIndex)
+		}
+		meshPacket.wantAck = true
+
+		var dataMessage = DataMessage()
+		guard let adminData: Data = try? adminPacket.serializedData() else {
+			throw AccessoryError.ioFailed("requestBluetoothConfig: Unable to serialize admin packet")
+		}
+		dataMessage.payload = adminData
+		dataMessage.portnum = PortNum.adminApp
+		dataMessage.wantResponse = true
+
+		meshPacket.decoded = dataMessage
+
+		let messageDescription = "🛎️ Requested Bluetooth Config on admin channel \(adminIndex) for node: \(String(activeDeviceNum ?? -1))"
+		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
+	}
+
+	public func saveBluetoothConfig(config: Config.BluetoothConfig, fromUser: UserEntity, toUser: UserEntity, adminIndex: Int32? = nil) async throws -> Int64 {
+		var adminPacket = AdminMessage()
+		adminPacket.setConfig.bluetooth = config
+		if fromUser != toUser {
+			adminPacket.sessionPasskey = toUser.userNode?.sessionPasskey ?? Data()
+		}
+		var meshPacket: MeshPacket = MeshPacket()
+		meshPacket.to = UInt32(toUser.num)
+		meshPacket.from	= UInt32(fromUser.num)
+		if let adminIndex = adminIndex {
+			meshPacket.channel = UInt32(adminIndex)
+		}
+		meshPacket.id = UInt32.random(in: UInt32(UInt8.max)..<UInt32.max)
+		meshPacket.priority =  MeshPacket.Priority.reliable
+		meshPacket.wantAck = true
+		var dataMessage = DataMessage()
+		guard let adminData: Data = try? adminPacket.serializedData() else {
+			throw AccessoryError.ioFailed("saveBluetoothConfig: Unable to serialize admin packet")
+		}
+		dataMessage.payload = adminData
+		dataMessage.portnum = PortNum.adminApp
+		meshPacket.decoded = dataMessage
+		let messageDescription = "🛟 Saved Bluetooth Config for \(toUser.longName ?? "unknown".localized)"
+
+		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
+		Task { @MainActor in
+			upsertBluetoothConfigPacket(config: config, nodeNum: toUser.num, sessionPasskey: toUser.userNode?.sessionPasskey, context: context)
 		}
 		return Int64(meshPacket.id)
 	}

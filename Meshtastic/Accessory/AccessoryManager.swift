@@ -621,5 +621,6 @@ extension AccessoryManager {
 		let supportedVersion = UserDefaults.firmwareVersion == "0.0.0" ||
 			forVersion.compare(myVersion, options: .numeric) == .orderedAscending ||
 			forVersion.compare(myVersion, options: .numeric) == .orderedSame
+		return supportedVersion
 	}
 }

@@ -89,7 +89,7 @@ struct SendWaypointIntent: AppIntent {
 		}
 
 		if isLocked {
-			if let deviceNum = AccessoryManager.shared.connectedDeviceNum {
+			if let deviceNum = AccessoryManager.shared.activeDeviceNum {
 				newWaypoint.lockedTo = UInt32(deviceNum)
 			} else {
 				throw AppIntentErrors.AppIntentError.notConnected

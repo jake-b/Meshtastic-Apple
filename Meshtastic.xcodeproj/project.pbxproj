@@ -27,7 +27,6 @@
 		2344A2AF2D6697A700170A77 /* TelemetryEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2344A2AD2D6697A700170A77 /* TelemetryEntity+CoreDataClass.swift */; };
 		2344A2B02D6697A700170A77 /* TelemetryEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2344A2AE2D6697A700170A77 /* TelemetryEntity+CoreDataProperties.swift */; };
 		2344A2B12D68DFF800170A77 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C49D8F2C471AEA0024FBD1 /* Constants.swift */; };
-		235CA7392E293FFA00A329AA /* MeshPacketHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 235CA7382E293FFA00A329AA /* MeshPacketHandler.swift */; };
 		2373AE132D0A216C0086C749 /* MetricsChartSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE122D0A216C0086C749 /* MetricsChartSeries.swift */; };
 		2373AE152D0A24930086C749 /* MetricsSeriesList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE142D0A24930086C749 /* MetricsSeriesList.swift */; };
 		2373AE172D0A26620086C749 /* EnvironmentDefaultSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE162D0A26620086C749 /* EnvironmentDefaultSeries.swift */; };
@@ -312,7 +311,6 @@
 		2344A2AA2D66973D00170A77 /* ManagedAttributePropertyWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedAttributePropertyWrapper.swift; sourceTree = "<group>"; };
 		2344A2AD2D6697A700170A77 /* TelemetryEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TelemetryEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
 		2344A2AE2D6697A700170A77 /* TelemetryEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TelemetryEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
-		235CA7382E293FFA00A329AA /* MeshPacketHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshPacketHandler.swift; sourceTree = "<group>"; };
 		2373AE122D0A216C0086C749 /* MetricsChartSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsChartSeries.swift; sourceTree = "<group>"; };
 		2373AE142D0A24930086C749 /* MetricsSeriesList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsSeriesList.swift; sourceTree = "<group>"; };
 		2373AE162D0A26620086C749 /* EnvironmentDefaultSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentDefaultSeries.swift; sourceTree = "<group>"; };
@@ -689,7 +687,6 @@
 				23AD546C2E2AE9630046E9AB /* AccessoryManager+MQTT.swift */,
 				237AEB962E1FE627003B7CE3 /* BLETransport.swift */,
 				237AEB982E20098B003B7CE3 /* BLEConnection.swift */,
-				235CA7382E293FFA00A329AA /* MeshPacketHandler.swift */,
 			);
 			path = Accessory;
 			sourceTree = "<group>";
@@ -1553,7 +1550,6 @@
 				DD1BD0EE2C603C91008C0C70 /* CustomFormatters.swift in Sources */,
 				DD0BE3102CB9FDC4000BA445 /* DetectionSensorEnums.swift in Sources */,
 				DDD9E4E4284B208E003777C5 /* UserEntityExtension.swift in Sources */,
-				235CA7392E293FFA00A329AA /* MeshPacketHandler.swift in Sources */,
 				233E99CB2D85AAA900CC3A77 /* RainfallCompactWidget.swift in Sources */,
 				DD2553592855B52700E55709 /* PositionConfig.swift in Sources */,
 				DD97E96828EFE9A00056DDA4 /* About.swift in Sources */,

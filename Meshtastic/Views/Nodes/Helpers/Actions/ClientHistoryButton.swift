@@ -18,7 +18,7 @@ struct ClientHistoryButton: View {
 						fromUser: connectedNode.user!,
 						toUser: node.user!
 					)
-					Task { @MainActor
+					Task { @MainActor in
 						isPresentingAlert = true
 					}
 				} catch {

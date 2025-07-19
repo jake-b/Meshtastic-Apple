@@ -226,7 +226,7 @@ struct CannedMessagesConfig: View {
 								// for now just disable the button after a successful save
 								hasMessagesChanges = false
 								if !hasChanges {
-									accessoryManager.sendWantConfig()
+									Task { await accessoryManager.sendWantConfig() }
 									goBack()
 								}
 							}

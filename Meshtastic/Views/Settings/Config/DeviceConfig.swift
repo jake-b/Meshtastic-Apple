@@ -168,7 +168,7 @@ struct DeviceConfig: View {
 			}
 			.disabled(self.bleManager.connectedPeripheral == nil || node?.deviceConfig == nil)
 			// Only show these buttons for the BLE connected node
-			if bleManager.connectedPeripheral != nil && node?.num ?? -1  == bleManager.connectedPeripheral.num {
+			if accessoryManager.isConnected, let device = accessoryManager.activeConnection?.device, node?.num ?? -1 == device.num {
 				HStack {
 					Button("Reset NodeDB", role: .destructive) {
 						isPresentingNodeDBResetConfirm = true
@@ -184,14 +184,15 @@ struct DeviceConfig: View {
 						titleVisibility: .visible
 					) {
 						Button("Erase all device and app data?", role: .destructive) {
-							if bleManager.sendNodeDBReset(fromUser: node!.user!, toUser: node!.user!) {
-								DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-									bleManager.disconnectPeripheral()
+							Task {
+								do {
+									try await accessoryManager.sendNodeDBReset(fromUser: node!.user!, toUser: node!.user!)
+									try await Task.sleep(for: .seconds(1))
+									accessoryManager.disconnect()
 									clearCoreDataDatabase(context: context, includeRoutes: false)
+								} catch {
+									Logger.mesh.error("NodeDB Reset Failed")
 								}
-
-							} else {
-								Logger.mesh.error("NodeDB Reset Failed")
 							}
 						}
 					}
@@ -209,23 +210,27 @@ struct DeviceConfig: View {
 						titleVisibility: .visible
 					) {
 						Button("Delete all config? ", role: .destructive) {
-							if bleManager.sendFactoryReset(fromUser: node!.user!, toUser: node!.user!) {
-								DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-									bleManager.disconnectPeripheral()
+							Task {
+								do {
+									try await accessoryManager.sendFactoryReset(fromUser: node!.user!, toUser: node!.user!)
+									try await Task.sleep(for: .seconds(1))
+									accessoryManager.disconnect()
 									clearCoreDataDatabase(context: context, includeRoutes: false)
+								} catch {
+									Logger.mesh.error("Factory Reset Failed")
 								}
-							} else {
-								Logger.mesh.error("Factory Reset Failed")
 							}
 						}
 						Button("Delete all config, keys and BLE bonds? ", role: .destructive) {
-							if bleManager.sendFactoryReset(fromUser: node!.user!, toUser: node!.user!, resetDevice: true) {
-								DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-									bleManager.disconnectPeripheral()
+							Task {
+								do {
+									try await accessoryManager.sendFactoryReset(fromUser: node!.user!, toUser: node!.user!, resetDevice: true)
+									try? await Task.sleep(for: .seconds(1))
+									accessoryManager.disconnect()
 									clearCoreDataDatabase(context: context, includeRoutes: false)
+								} catch {
+									Logger.mesh.error("Factory Reset Failed")
 								}
-							} else {
-								Logger.mesh.error("Factory Reset Failed")
 							}
 						}
 					}
@@ -233,8 +238,8 @@ struct DeviceConfig: View {
 			}
 			HStack {
 				SaveConfigButton(node: node, hasChanges: $hasChanges) {
-					let connectedNode = getNodeInfo(id: bleManager.connectedPeripheral.num, context: context)
-					if connectedNode != nil {
+					if let deviceNum = accessoryManager.activeDeviceNum,
+					   let connectedNode = getNodeInfo(id: deviceNum, context: context) {
 						var dc = Config.DeviceConfig()
 						dc.role = DeviceRoles(rawValue: deviceRole)!.protoEnumValue()
 						dc.buttonGpio = UInt32(buttonGPIO)
@@ -245,12 +250,14 @@ struct DeviceConfig: View {
 						dc.disableTripleClick = !tripleClickAsAdHocPing
 						dc.tzdef = tzdef
 						dc.ledHeartbeatDisabled = !ledHeartbeatEnabled
-						let adminMessageId = bleManager.saveDeviceConfig(config: dc, fromUser: connectedNode!.user!, toUser: node!.user!)
-						if adminMessageId > 0 {
-							// Should show a saved successfully alert once I know that to be true
-							// for now just disable the button after a successful save
-							hasChanges = false
-							goBack()
+						Task {
+							try await accessoryManager.saveDeviceConfig(config: dc, fromUser: connectedNode!.user!, toUser: node!.user!)
+							Task { @MainActor in
+								// Should show a saved successfully alert once I know that to be true
+								// for now just disable the button after a successful save
+								hasChanges = false
+								goBack()
+							}
 						}
 					}
 				}
@@ -266,16 +273,22 @@ struct DeviceConfig: View {
 		)
 		.onFirstAppear {
 			// Need to request a DeviceConfig from the remote node before allowing changes
-			if let connectedPeripheral = bleManager.connectedPeripheral, let node {
-				let connectedNode = getNodeInfo(id: connectedPeripheral.num, context: context)
+			if let deviceNum = accessoryManager.activeDeviceNum, let node {
+				let connectedNode = getNodeInfo(id: deviceNum, context: context)
 				if let connectedNode {
-					if node.num != connectedNode.num {
+					if node.num != deviceNum {
 						if UserDefaults.enableAdministration {
 							/// 2.5 Administration with session passkey
 							let expiration = node.sessionExpiration ?? Date()
 							if expiration < Date() || node.deviceConfig == nil {
-								Logger.mesh.info("⚙️ Empty or expired device config requesting via PKI admin")
-								_ = bleManager.requestDeviceConfig(fromUser: connectedNode.user!, toUser: node.user!)
+								Task {
+									do {
+										Logger.mesh.info("⚙️ Empty or expired device config requesting via PKI admin")
+										try await accessoryManager.requestDeviceConfig(fromUser: connectedNode.user!, toUser: node.user!)
+									} catch {
+										Logger.mesh.error("🚨 Device config request failed")
+									}
+								}
 							}
 						} else {
 							if node.deviceConfig == nil {

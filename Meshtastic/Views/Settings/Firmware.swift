@@ -21,6 +21,7 @@ struct Firmware: View {
 
 	var body: some View {
 		let supportedVersion = accessoryManager.checkIsVersionSupported(forVersion: minimumVersion)
+		let connectedVersion = accessoryManager.activeConnection?.device.firmwareVersion ?? "Unknown"
 		ScrollView {
 			VStack(alignment: .leading) {
 				let deviceString = currentDevice?.hwModelSlug.replacingOccurrences(of: "_", with: "")

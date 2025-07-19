@@ -71,21 +71,24 @@ struct BluetoothConfig: View {
 				}
 			}
 		}
-		.disabled(self.bleManager.connectedPeripheral == nil || node?.bluetoothConfig == nil)
+		.disabled(!accessoryManager.isConnected || node?.bluetoothConfig == nil)
 
 		SaveConfigButton(node: node, hasChanges: $hasChanges) {
-			if let myNodeNum = bleManager.connectedPeripheral?.num,
+			if let myNodeNum = accessoryManager.activeDeviceNum,
 				let connectedNode = getNodeInfo(id: myNodeNum, context: context) {
 				var bc = Config.BluetoothConfig()
 				bc.enabled = enabled
 				bc.mode = BluetoothModes(rawValue: mode)?.protoEnumValue() ?? Config.BluetoothConfig.PairingMode.randomPin
 				bc.fixedPin = UInt32(fixedPin) ?? 123456
-				let adminMessageId =  bleManager.saveBluetoothConfig(config: bc, fromUser: connectedNode.user!, toUser: node!.user!)
-				if adminMessageId > 0 {
-					// Should show a saved successfully alert once I know that to be true
-					// for now just disable the button after a successful save
-					hasChanges = false
-					goBack()
+				Task {
+					// TODO: ADMINIndex?
+					_ = try await accessoryManager.saveBluetoothConfig(config: bc, fromUser: connectedNode.user!, toUser: node!.user!)
+					Task { @MainActor in
+						// Should show a saved successfully alert once I know that to be true
+						// for now just disable the button after a successful save
+						hasChanges = false
+						goBack()
+					}
 				}
 			}
 		}
@@ -99,16 +102,23 @@ struct BluetoothConfig: View {
 		)
 		.onFirstAppear {
 			// Need to request a BluetoothConfig from the remote node before allowing changes
-			if let connectedPeripheral = bleManager.connectedPeripheral, let node {
-				let connectedNode = getNodeInfo(id: connectedPeripheral.num, context: context)
-				if let connectedNode {
-					if node.num != connectedNode.num {
+			if let deviceNum = accessoryManager.activeDeviceNum, let node {
+				if let connectedNode = getNodeInfo(id: deviceNum, context: context) {
+					if node.num != deviceNum {
 						if UserDefaults.enableAdministration {
 							/// 2.5 Administration with session passkey
 							let expiration = node.sessionExpiration ?? Date()
 							if expiration < Date() || node.bluetoothConfig == nil {
-								Logger.mesh.info("⚙️ Empty or expired bluetooth config requesting via PKI admin")
-								_ = bleManager.requestBluetoothConfig(fromUser: connectedNode.user!, toUser: node.user!)
+								Task {
+									do {
+										Logger.mesh.info("⚙️ Empty or expired bluetooth config requesting via PKI admin")
+										// TODO: AdminIndex?
+										try await accessoryManager.requestBluetoothConfig(fromUser: connectedNode.user!, toUser: node.user!)
+									} catch {
+										Logger.mesh.info("🚨 Bluetooth config request failed")
+									}
+								}
+
 							}
 						} else {
 							/// Legacy Administration

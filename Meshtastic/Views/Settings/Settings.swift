@@ -377,7 +377,7 @@ struct Settings: View {
 				}
 
 				if !(node?.deviceConfig?.isManaged ?? false) {
-					if bleManager.connectedPeripheral != nil {
+					if accessoryManager.isConnected {
 						Section("Configure") {
 							if node?.canRemoteAdmin ?? false {
 								Picker("Node", selection: $selectedNode) {
@@ -525,10 +525,10 @@ struct Settings: View {
 				preferredNodeNum = newConnectedNode
 				if nodes.count > 1 {
 					if selectedNode == 0 {
-						self.selectedNode = Int(bleManager.connectedPeripheral != nil ? newConnectedNode : 0)
+						self.selectedNode = Int(accessoryManager.isConnected ? newConnectedNode : 0)
 					}
 				} else {
-					self.selectedNode = Int(bleManager.connectedPeripheral != nil ? newConnectedNode: 0)
+					self.selectedNode = Int(accessoryManager.isConnected ? newConnectedNode: 0)
 				}
 			}
 			.onAppear {
@@ -536,10 +536,10 @@ struct Settings: View {
 					self.preferredNodeNum = UserDefaults.preferredPeripheralNum
 					if nodes.count > 1 {
 						if selectedNode == 0 {
-							self.selectedNode = Int(bleManager.connectedPeripheral != nil ? UserDefaults.preferredPeripheralNum : 0)
+							self.selectedNode = Int(accessoryManager.isConnected ? UserDefaults.preferredPeripheralNum : 0)
 						}
 					} else {
-						self.selectedNode = Int(bleManager.connectedPeripheral != nil ? UserDefaults.preferredPeripheralNum : 0)
+						self.selectedNode = Int(accessoryManager.isConnected ? UserDefaults.preferredPeripheralNum : 0)
 					}
 				}
 			}
