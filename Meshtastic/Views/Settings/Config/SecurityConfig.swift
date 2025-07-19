@@ -16,7 +16,7 @@ struct SecurityConfig: View {
 
 	private var idiom: UIUserInterfaceIdiom { UIDevice.current.userInterfaceIdiom }
 	@Environment(\.managedObjectContext) var context
-	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@Environment(\.dismiss) private var goBack
 
 	var node: NodeInfoEntity?
@@ -224,11 +224,8 @@ struct SecurityConfig: View {
 		.scrollDismissesKeyboard(.immediately)
 		.navigationTitle("Security Config")
 		.navigationBarItems(trailing: ZStack {
-			ConnectedDevice(
-				bluetoothOn: bleManager.isSwitchedOn,
-				deviceConnected: bleManager.connectedPeripheral != nil,
-				name: "\(bleManager.connectedPeripheral?.shortName ?? "?")"
-			)
+			ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
+
 		})
 		.onChange(of: node) { _, _ in
 			setSecurityValues()

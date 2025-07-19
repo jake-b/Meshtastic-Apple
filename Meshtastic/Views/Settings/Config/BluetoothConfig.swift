@@ -11,7 +11,7 @@ import SwiftUI
 
 struct BluetoothConfig: View {
 	@Environment(\.managedObjectContext) var context
-	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@Environment(\.dismiss) private var goBack
 	var node: NodeInfoEntity?
 	@State var hasChanges = false
@@ -93,11 +93,8 @@ struct BluetoothConfig: View {
 		.navigationTitle("Bluetooth Config")
 		.navigationBarItems(
 			trailing: ZStack {
-				ConnectedDevice(
-					bluetoothOn: bleManager.isSwitchedOn,
-					deviceConnected: bleManager.connectedPeripheral != nil,
-					name: bleManager.connectedPeripheral?.shortName ?? "?"
-				)
+				ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
+
 			}
 		)
 		.onFirstAppear {

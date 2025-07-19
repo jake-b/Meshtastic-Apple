@@ -830,7 +830,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 						connectedVersion = String(version.dropLast())
 						UserDefaults.firmwareVersion = connectedVersion
 					}
-					let supportedVersion = connectedVersion == "0.0.0" ||  self.minimumVersion.compare(connectedVersion, options: .numeric) == .orderedAscending || minimumVersion.compare(connectedVersion, options: .numeric) == .orderedSame
+					let supportedVersion = accessoryManager.checkIsVersionSupported(forVersion: minimumVersion)
 					if !supportedVersion {
 						invalidVersion = true
 						lastConnectionError = "🚨" + "Update Your Firmware".localized

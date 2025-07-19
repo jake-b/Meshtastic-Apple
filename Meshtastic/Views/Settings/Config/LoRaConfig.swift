@@ -25,7 +25,7 @@ struct LoRaConfig: View {
 	}()
 
 	@Environment(\.managedObjectContext) var context
-	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@Environment(\.dismiss) private var goBack
 	@FocusState var focusedField: Field?
 
@@ -231,11 +231,8 @@ struct LoRaConfig: View {
 		.navigationTitle("LoRa Config")
 		.navigationBarItems(
 			trailing: ZStack {
-				ConnectedDevice(
-					bluetoothOn: bleManager.isSwitchedOn,
-					deviceConnected: bleManager.connectedPeripheral != nil,
-					name: bleManager.connectedPeripheral?.shortName ?? "?"
-				)
+				ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
+
 			}
 		)
 		.onFirstAppear {

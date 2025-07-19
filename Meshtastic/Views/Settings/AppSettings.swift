@@ -8,7 +8,7 @@ import OSLog
 struct AppSettings: View {
 	private var idiom: UIUserInterfaceIdiom { UIDevice.current.userInterfaceIdiom }
 	@Environment(\.managedObjectContext) var context
-	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@State var totalDownloadedTileSize = ""
 	@State private var isPresentingCoreDataResetConfirm = false
 	@State private var isPresentingDeleteMapTilesConfirm = false
@@ -125,7 +125,7 @@ struct AppSettings: View {
 		.navigationTitle("App Settings")
 		.navigationBarItems(trailing:
 								ZStack {
-			ConnectedDevice(bluetoothOn: bleManager.isSwitchedOn, deviceConnected: bleManager.connectedPeripheral != nil, name: (bleManager.connectedPeripheral != nil) ? bleManager.connectedPeripheral.shortName : "?")
+			ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
 		})
 	}
 }

@@ -39,7 +39,7 @@ struct SendWaypointIntent: AppIntent {
 	var expiration: Date?
 
 	func perform() async throws -> some IntentResult {
-		if !BLEManager.shared.isConnected {
+		if !AccessoryManager.shared.isConnected {
 			throw AppIntentErrors.AppIntentError.notConnected
 		}
 
@@ -89,14 +89,16 @@ struct SendWaypointIntent: AppIntent {
 		}
 
 		if isLocked {
-			if let connectedPeripheral = BLEManager.shared.connectedPeripheral {
-				newWaypoint.lockedTo = UInt32(connectedPeripheral.num)
+			if let deviceNum = AccessoryManager.shared.connectedDeviceNum {
+				newWaypoint.lockedTo = UInt32(deviceNum)
 			} else {
 				throw AppIntentErrors.AppIntentError.notConnected
 			}
 		}
 
-		if !BLEManager.shared.sendWaypoint(waypoint: newWaypoint) {
+		do {
+			try await AccessoryManager.shared.sendWaypoint(waypoint: newWaypoint)
+		} catch {
 			throw AppIntentErrors.AppIntentError.message("Failed to Send Waypoint")
 		}
 		return .result()

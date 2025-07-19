@@ -12,7 +12,7 @@ import OSLog
 struct ChannelList: View {
 
 	@Environment(\.managedObjectContext) var context
-	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accesoryManager: AccessoryManager
 
 	@Binding
 	var node: NodeInfoEntity?
@@ -131,7 +131,7 @@ struct ChannelList: View {
 									Button {
 										channel.mute.toggle()
 										do {
-											let adminMessageId =  bleManager.saveChannel(channel: channel.protoBuf, fromUser: node.user!, toUser: node.user!)
+											let adminMessageId =  accessoryManager.saveChannel(channel: channel.protoBuf, fromUser: node.user!, toUser: node.user!)
 											if adminMessageId > 0 {
 												context.refresh(channel, mergeChanges: true)
 											}

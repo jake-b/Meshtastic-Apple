@@ -11,7 +11,7 @@ import SwiftUI
 struct NetworkConfig: View {
 
 	@Environment(\.managedObjectContext) var context
-	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@Environment(\.dismiss) private var goBack
 
 	var node: NodeInfoEntity?
@@ -127,11 +127,8 @@ struct NetworkConfig: View {
 		.navigationTitle("Network Config")
 		.navigationBarItems(
 			trailing: ZStack {
-				ConnectedDevice(
-					bluetoothOn: bleManager.isSwitchedOn,
-					deviceConnected: bleManager.connectedPeripheral != nil,
-					name: bleManager.connectedPeripheral?.shortName ?? "?"
-				)
+				ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
+
 			}
 		)
 		.onAppear {

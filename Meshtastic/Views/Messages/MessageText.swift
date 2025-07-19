@@ -12,6 +12,7 @@ struct MessageText: View {
 	static let dateFormatString = (localeDateFormat ?? "MM/dd/YY j:mm:ss:a")
 
 	@Environment(\.managedObjectContext) var context
+	@EnvironmentObject var accessoryManager: AccessoryManager
 
 	let message: MessageEntity
 	let tapBackDestination: MessageDestination
@@ -92,7 +93,7 @@ struct MessageText: View {
 
 	if url.absoluteString.lowercased().contains("meshtastic.org/v/#") {
 		// Handle contact URL
-		ContactURLHandler.handleContactUrl(url: url, bleManager: BLEManager.shared)
+		ContactURLHandler.handleContactUrl(url: url, accessoryManager: accessoryManager)
 		return .handled // Prevent default browser opening
 	} else if url.absoluteString.lowercased().contains("meshtastic.org/e/") {
 		// Handle channel URL
@@ -135,7 +136,7 @@ struct MessageText: View {
 				SaveChannelQRCode(
 					channelSetLink: channelSettings ?? "Empty Channel URL",
 					addChannels: addChannels,
-					bleManager: BLEManager.shared
+					accessoryManager: accessoryManager
 				)
 				.presentationDetents([.large])
 				.presentationDragIndicator(.visible)

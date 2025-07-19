@@ -14,6 +14,7 @@ enum AccessoryError: Error {
 	case discoveryFailed(String)
 	case connectionFailed(String)
 	case ioFailed(String)
+	case appError(String)
 	// Transport-specific sub-errors can be nested
 }
 
@@ -28,13 +29,18 @@ enum AccessoryManagerState {
 }
 
 class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManagerDelegate {
+	// Singleton Access
+	static let shared = AccessoryManager()
+
 	// Constants
 	let NONCE_ONLY_CONFIG = 69420
 	let NONCE_ONLY_DB = 69421
 	let minimumVersion = "2.3.15"
 
 	// Global Objects
-	var appState: AppState
+	// Chicken/Egg problem.  Set in the App object immediately after
+	// AppState and AccessoryManager are created
+	var appState: AppState!
 	let context = PersistenceController.shared.container.viewContext
 	let mqttManager = MqttClientProxyManager.shared
 
@@ -43,9 +49,13 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 	@Published var devices: [Device] = []
 	@Published var state: AccessoryManagerState
 	@Published var mqttError: String = ""
+	@Published var activeDeviceNum: Int64?
+	@Published var allowDisconnect = false
+	@Published var lastConnectionError: Error?
+
+	var activeConnection: (device: Device, connection: any Connection)?
 
 	private let transports: [any Transport]
-	var activeConnection: (device: Device, connection: any Connection)?
 
 	private var discoveryTask: Task<Void, Never>?
 	private var locationTask: Task<Void, Error>?
@@ -55,10 +65,13 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 	public var wantRangeTestPackets = true
 	var wantStoreAndForwardPackets = false
 
-	init(appState: AppState, transports: [any Transport] = [BLETransport()]) {
+	var isConnected: Bool {
+		self.activeConnection?.connection.isConnected ?? false
+	}
+
+	init(transports: [any Transport] = [BLETransport()]) {
 		self.transports = transports
 		self.state = .uninitialized
-		self.appState = appState
 		self.mqttManager.delegate = self
 	}
 
@@ -120,6 +133,12 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 		}
 	}
 
+	func connectToPreferredDevice() -> Bool {
+		// not implemented
+		Logger.services.error("connectToPreferredDevice not implemented")
+		return false
+	}
+
 	func connect(to device: Device) async throws {
 		// Prevent new connection if one is active
 		if activeConnection != nil {
@@ -143,7 +162,7 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 		let retryDelay: Duration = .seconds(1)
 
 		// Start trying to connect
-		var lastError: Error?
+		Task { @MainActor in lastConnectionError = nil }
 		var shouldRetry = true
 		for attempt in 1...maxRetries {
 			if attempt > 1 {
@@ -178,11 +197,11 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 				heartbeatToRadio.payloadVariant = .heartbeat(Heartbeat())
 				try? await connection.send(heartbeatToRadio)
 
-				try? await sendNonceRequest(nonce: UInt32(NONCE_ONLY_CONFIG), connection: connection)
-				Logger.services.info("✅ [Accessory] NONCE_ONLY_CONFIG Done")
+				await sendWantConfig()
 
-				try? await sendNonceRequest(nonce: UInt32(NONCE_ONLY_DB), connection: connection)
-				Logger.services.info("✅ [Accessory] NONCE_ONLY_DB Done")
+				await sendWantDatabase()
+
+				Task { @MainActor in self.allowDisconnect = true }
 
 				guard let firmwareVersion = activeConnection?.device.firmwareVersion else {
 					throw AccessoryError.connectionFailed("Firmware version not available")
@@ -198,16 +217,15 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 				let connectedVersion = String(version.dropLast())
 				UserDefaults.firmwareVersion = connectedVersion
 
-				let supportedVersion = self.minimumVersion.compare(connectedVersion, options: .numeric) == .orderedAscending || minimumVersion.compare(connectedVersion, options: .numeric) == .orderedSame
+				let supportedVersion = checkIsVersionSupported(forVersion: minimumVersion)
 				if !supportedVersion {
 					shouldRetry = false
 					throw AccessoryError.connectionFailed("🚨" + "Update Your Firmware".localized)
 				}
 
 				// We have an active connection
-				Task { @MainActor in
-					updateDevice(deviceId: device.id, key: \.connectionState, value: .connected)
-				}
+				updateDevice(deviceId: device.id, key: \.connectionState, value: .connected)
+				updateState(.subscribed)
 
 				await initializeMqtt()
 				initializeLocationProvider()
@@ -215,7 +233,7 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 				return
 			} catch {
 				Logger.services.error("🚨 Connection ERROR: \(error)")
-				lastError = error
+				Task { @MainActor in lastConnectionError = error }
 				if attempt < maxRetries && shouldRetry {
 					try? await Task.sleep(for: retryDelay)
 					try? await self.disconnect()
@@ -223,7 +241,26 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 			}
 		}
 		updateDevice(deviceId: device.id, key: \.connectionState, value: .disconnected)
-		throw lastError ?? AccessoryError.connectionFailed("Connection failed after retries")
+		throw lastConnectionError ?? AccessoryError.connectionFailed("Connection failed after retries")
+	}
+
+	func sendWantConfig() async {
+		guard let connection = activeConnection?.connection else {
+			Logger.mesh.error("Unable to send wantConfig (config): No device connected")
+			return
+		}
+		try? await sendNonceRequest(nonce: UInt32(NONCE_ONLY_CONFIG), connection: connection)
+		Logger.services.info("✅ [Accessory] NONCE_ONLY_CONFIG Done")
+	}
+
+	func sendWantDatabase() async {
+		guard let connection = activeConnection?.connection else {
+			Logger.mesh.error("Unable to send wantConfig (database) : No device connected")
+			return
+		}
+
+		try? await sendNonceRequest(nonce: UInt32(NONCE_ONLY_DB), connection: connection)
+		Logger.services.info("✅ [Accessory] NONCE_ONLY_DB Done")
 	}
 
 	private func sendNonceRequest(nonce: UInt32, connection: any Connection) async throws {
@@ -254,6 +291,8 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 		activeConnection = nil
 		try await active.connection.disconnect()
 		updateDevice(deviceId: active.device.id, key: \.connectionState, value: .disconnected)
+		updateState(.idle)
+		allowDisconnect = false
 		didDisconnect()
 	}
 
@@ -266,11 +305,15 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 		if let index = devices.firstIndex(where: { $0.id == deviceId }) {
 			var device = devices[index]
 			device[keyPath: key] = value
+
+			if let activeConnection, activeConnection.device.id == device.id {
+				self.activeConnection = (device: device, connection: activeConnection.connection)
+			}
+
+			// Update the @Published stuff for the UI
 			Task { @MainActor in
 				devices[index] = device
-				if let activeConnection, activeConnection.device.id == device.id {
-					self.activeConnection = (device: device, connection: activeConnection.connection)
-				}
+				activeDeviceNum = device.num
 			}
 		} else {
 			Logger.services.error("Device with ID \(deviceId) not found in devices list.")
@@ -284,13 +327,16 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 		}
 	}
 
-	func send(data: ToRadio) async throws {
+	func send(data: ToRadio, debugDescription: String? = nil) async throws {
 		Logger.services.info("✅ [Accessory] Sending \(data.debugDescription)")
 		guard let active = activeConnection,
 			  active.connection.isConnected else {
 			throw AccessoryError.connectionFailed("Not connected to any device")
 		}
 		try await active.connection.send(data)
+		if let debugDescription {
+			Logger.mesh.info("📻 \(debugDescription, privacy: .public)")
+		}
 	}
 
 	func didReceive(result: Result<FromRadio, Error>) {
@@ -489,14 +535,14 @@ extension AccessoryManager {
 		}
 	}
 
-	public func sendPosition(channel: Int32, destNum: Int64, wantResponse: Bool) async throws -> Bool {
+	public func sendPosition(channel: Int32, destNum: Int64, wantResponse: Bool) async throws {
 		guard let fromNodeNum = activeConnection?.device.num else {
-			return false
+			throw AccessoryError.ioFailed("Not connected to any device")
 		}
 
 		guard let positionPacket = try await getPositionFromPhoneGPS(destNum: destNum, fixedPosition: false) else {
 			Logger.services.error("Unable to get position data from device GPS to send to node")
-			return false
+			throw AccessoryError.appError("Unable to get position data from device GPS to send to node")
 		}
 
 		var meshPacket = MeshPacket()
@@ -511,14 +557,13 @@ extension AccessoryManager {
 			meshPacket.decoded = dataMessage
 		} else {
 			Logger.services.error("Failed to serialize position packet data")
-			return false
+			throw AccessoryError.ioFailed("sendPosition: Unable to serialize position packet data")
 		}
 
 		var toRadio: ToRadio!
 		toRadio = ToRadio()
 		toRadio.packet = meshPacket
 		try await self.send(data: toRadio)
-		return true
 	}
 
 	public func getPositionFromPhoneGPS(destNum: Int64, fixedPosition: Bool) async throws -> Position? {
@@ -562,5 +607,19 @@ extension AccessoryManager {
 				cont.resume(returning: positionPacket)
 			}
 		}
+	}
+
+}
+
+extension AccessoryManager {
+	var connectedVersion: String? {
+		return activeConnection?.device.firmwareVersion
+	}
+
+	func checkIsVersionSupported(forVersion: String) -> Bool {
+		let myVersion = connectedVersion ?? "0.0.0"
+		let supportedVersion = UserDefaults.firmwareVersion == "0.0.0" ||
+			forVersion.compare(myVersion, options: .numeric) == .orderedAscending ||
+			forVersion.compare(myVersion, options: .numeric) == .orderedSame
 	}
 }

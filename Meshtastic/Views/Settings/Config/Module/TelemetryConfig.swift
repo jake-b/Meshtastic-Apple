@@ -11,7 +11,7 @@ import SwiftUI
 struct TelemetryConfig: View {
 
 	@Environment(\.managedObjectContext) var context
-	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@Environment(\.dismiss) private var goBack
 
 	var node: NodeInfoEntity?
@@ -101,7 +101,7 @@ struct TelemetryConfig: View {
 					.toggleStyle(SwitchToggleStyle(tint: .accentColor))
 				}
 			}
-			.disabled(self.bleManager.connectedPeripheral == nil || node?.telemetryConfig == nil)
+			.disabled(!accessoryManager.isConnected || node?.telemetryConfig == nil)
 
 			SaveConfigButton(node: node, hasChanges: $hasChanges) {
 				let connectedNode = getNodeInfo(id: bleManager.connectedPeripheral?.num ?? -1, context: context)
@@ -127,11 +127,8 @@ struct TelemetryConfig: View {
 			.navigationTitle("Telemetry Config")
 			.navigationBarItems(
 				trailing: ZStack {
-					ConnectedDevice(
-						bluetoothOn: bleManager.isSwitchedOn,
-						deviceConnected: bleManager.connectedPeripheral != nil,
-						name: bleManager.connectedPeripheral?.shortName ?? "?"
-					)
+					ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
+
 				}
 			)
 			.onFirstAppear {

@@ -4,7 +4,7 @@ import OSLog
 
 struct PowerConfig: View {
 	@Environment(\.managedObjectContext) private var context
-	@EnvironmentObject private var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@Environment(\.dismiss) private var goBack
 
 	let node: NodeInfoEntity?
@@ -103,11 +103,8 @@ struct PowerConfig: View {
 		.disabled(self.bleManager.connectedPeripheral == nil || node?.powerConfig == nil)
 		.navigationTitle("Power Config")
 		.navigationBarItems(trailing: ZStack {
-			ConnectedDevice(
-				bluetoothOn: bleManager.isSwitchedOn,
-				deviceConnected: bleManager.connectedPeripheral != nil,
-				name: "\(bleManager.connectedPeripheral?.shortName ?? "?")"
-			)
+			ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
+
 		})
 		.toolbar {
 			ToolbarItemGroup(placement: .keyboard) {

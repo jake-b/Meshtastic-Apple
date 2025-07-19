@@ -12,7 +12,7 @@ import MeshtasticProtobufs
 
 struct Settings: View {
 	@Environment(\.managedObjectContext) var context
-	@EnvironmentObject var bleManager: BLEManager
+	@EnvironmentObject var accessoryManager: AccessoryManager
 	@FetchRequest(
 		sortDescriptors: [
 			NSSortDescriptor(key: "favorite", ascending: false),

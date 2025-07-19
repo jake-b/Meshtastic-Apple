@@ -29,11 +29,10 @@ struct MeshtasticAppleApp: App {
 			router: Router()
 		)
 
-		accessoryManager = AccessoryManager(appState: appState)
+		accessoryManager = AccessoryManager.shared
+		accessoryManager.appState = appState
 
 		self._appState = ObservedObject(wrappedValue: appState)
-		// Initialize the BLEManager singleton with the necessary dependencies
-		BLEManager.setup(appState: appState, context: persistenceController.container.viewContext)
 
 		self.persistenceController = persistenceController
 		// Wire up router
@@ -64,8 +63,7 @@ struct MeshtasticAppleApp: App {
 				SaveChannelQRCode(
 					channelSetLink: channelSettings ?? "Empty Channel URL",
 					addChannels: addChannels,
-					bleManager: BLEManager.shared
-				)
+					accessoryManager: accessoryManager				)
 				.presentationDetents([.large])
 				.presentationDragIndicator(.visible)
 			}
@@ -74,7 +72,7 @@ struct MeshtasticAppleApp: App {
 				self.incomingUrl = userActivity.webpageURL
 				self.saveChannels = false
 				if self.incomingUrl?.absoluteString.lowercased().contains("meshtastic.org/v/#") == true {
-					ContactURLHandler.handleContactUrl(url: self.incomingUrl!, bleManager: BLEManager.shared)
+					ContactURLHandler.handleContactUrl(url: self.incomingUrl!, accessoryManager: accessoryManager)
 				} else if self.incomingUrl?.absoluteString.lowercased().contains("meshtastic.org/e/") == true {
 					if let components = self.incomingUrl?.absoluteString.components(separatedBy: "#") {
 						self.addChannels = Bool(self.incomingUrl?["add"] ?? "false") ?? false
@@ -102,7 +100,7 @@ struct MeshtasticAppleApp: App {
 				Logger.mesh.debug("Some sort of URL was received \(url, privacy: .public)")
 				self.incomingUrl = url
 				if url.absoluteString.lowercased().contains("meshtastic.org/v/#") {
-					ContactURLHandler.handleContactUrl(url: url, bleManager: BLEManager.shared)
+					ContactURLHandler.handleContactUrl(url: url, accessoryManager: accessoryManager)
 				} else if url.absoluteString.lowercased().contains("meshtastic.org/e/") {
 					if let components = self.incomingUrl?.absoluteString.components(separatedBy: "#") {
 						self.addChannels = Bool(self.incomingUrl?["add"] ?? "false") ?? false
@@ -160,7 +158,6 @@ struct MeshtasticAppleApp: App {
 		}
 		.environment(\.managedObjectContext, persistenceController.container.viewContext)
 		.environmentObject(appState)
-		.environmentObject(BLEManager.shared)
 		.environmentObject(accessoryManager)
 	}
 
