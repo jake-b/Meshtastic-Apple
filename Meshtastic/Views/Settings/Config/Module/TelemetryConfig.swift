@@ -140,7 +140,7 @@ struct TelemetryConfig: View {
 					let connectedNode = getNodeInfo(id: deviceNum, context: context)
 					if let connectedNode {
 						if node.num != deviceNum {
-							if UserDefaults.enableAdministration && node.num != connectedNode.num {
+							if UserDefaults.enableAdministration && node.num != deviceNum {
 								/// 2.5 Administration with session passkey
 								let expiration = node.sessionExpiration ?? Date()
 								if expiration < Date() || node.telemetryConfig == nil {

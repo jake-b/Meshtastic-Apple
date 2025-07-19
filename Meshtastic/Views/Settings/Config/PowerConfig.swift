@@ -100,7 +100,7 @@ struct PowerConfig: View {
 //				}
 			}
 		}
-		.disabled(!accessoryManager.isConnected == false || node?.powerConfig == nil)
+		.disabled(!accessoryManager.isConnected || node?.powerConfig == nil)
 		.navigationTitle("Power Config")
 		.navigationBarItems(trailing: ZStack {
 			ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
@@ -129,7 +129,7 @@ struct PowerConfig: View {
 			if let deviceNum = accessoryManager.activeDeviceNum, let node {
 				let connectedNode = getNodeInfo(id: deviceNum, context: context)
 				if let connectedNode {
-					if node.num != connectedNode.num {
+					if node.num != deviceNum {
 						if UserDefaults.enableAdministration {
 							/// 2.5 Administration with session passkey
 							let expiration = node.sessionExpiration ?? Date()

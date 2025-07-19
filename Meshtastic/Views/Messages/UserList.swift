@@ -138,15 +138,15 @@ struct UserList: View {
 						.contextMenu {
 							Button {
 								if node != nil && !(user.userNode?.favorite ?? false) {
-									let success = accessoryManager.setFavoriteNode(node: user.userNode!, connectedNodeNum: Int64(node!.num))
-									if success {
-										user.userNode?.favorite = !(user.userNode?.favorite ?? false)
+									user.userNode?.favorite = !(user.userNode?.favorite ?? false)
+									Task {
+										try await accessoryManager.setFavoriteNode(node: user.userNode!, connectedNodeNum: Int64(node!.num))
 										Logger.data.info("Favorited a node")
 									}
 								} else {
-									let success = accessoryManager.removeFavoriteNode(node: user.userNode!, connectedNodeNum: Int64(node!.num))
-									if success {
-										user.userNode?.favorite = !(user.userNode?.favorite ?? false)
+									user.userNode?.favorite = !(user.userNode?.favorite ?? false)
+									Task {
+										try await accessoryManager.removeFavoriteNode(node: user.userNode!, connectedNodeNum: Int64(node!.num))
 										Logger.data.info("Unfavorited a node")
 									}
 								}

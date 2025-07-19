@@ -132,11 +132,10 @@ struct DisplayConfig: View {
 				.pickerStyle(DefaultPickerStyle())
 			}
 		}
-		.disabled(self.bleManager.connectedPeripheral == nil || node?.displayConfig == nil)
+		.disabled(!accessoryManager.isConnected || node?.displayConfig == nil)
 
 		SaveConfigButton(node: node, hasChanges: $hasChanges) {
-			let connectedNode = getNodeInfo(id: bleManager.connectedPeripheral.num, context: context)
-			if connectedNode != nil {
+			if let deviceNum = accessoryManager.activeDeviceNum, let connectedNode = getNodeInfo(id: deviceNum, context: context) {
 				var dc = Config.DisplayConfig()
 				dc.gpsFormat = GpsFormats(rawValue: gpsFormat)!.protoEnumValue()
 				dc.screenOnSecs = UInt32(screenOnSeconds)
@@ -149,13 +148,14 @@ struct DisplayConfig: View {
 				dc.units = Units(rawValue: units)!.protoEnumValue()
 				dc.use12HClock = use12HourClock
 
-				let adminMessageId =  bleManager.saveDisplayConfig(config: dc, fromUser: connectedNode!.user!, toUser: node!.user!)
-				if adminMessageId > 0 {
-
-					// Should show a saved successfully alert once I know that to be true
-					// for now just disable the button after a successful save
-					hasChanges = false
-					goBack()
+				Task {
+					_ = try await accessoryManager.saveDisplayConfig(config: dc, fromUser: connectedNode.user!, toUser: node!.user!)
+					Task { @MainActor in
+						// Should show a saved successfully alert once I know that to be true
+						// for now just disable the button after a successful save
+						hasChanges = false
+						goBack()
+					}
 				}
 			}
 		}
@@ -169,16 +169,21 @@ struct DisplayConfig: View {
 		)
 		.onFirstAppear {
 			// Need to request a DisplayConfig from the remote node before allowing changes
-			if let connectedPeripheral = bleManager.connectedPeripheral, let node {
-				let connectedNode = getNodeInfo(id: connectedPeripheral.num, context: context)
-				if let connectedNode {
-					if node.num != connectedNode.num {
+			if let deviceNum = accessoryManager.activeDeviceNum, let node {
+				if let connectedNode = getNodeInfo(id: deviceNum, context: context) {
+					if node.num != deviceNum {
 						if UserDefaults.enableAdministration {
 							/// 2.5 Administration with session passkey
 							let expiration = node.sessionExpiration ?? Date()
 							if expiration < Date() || node.displayConfig == nil {
-								Logger.mesh.info("⚙️ Empty or expired display config requesting via PKI admin")
-								_ = bleManager.requestDisplayConfig(fromUser: connectedNode.user!, toUser: node.user!)
+								Task {
+									do {
+										Logger.mesh.info("⚙️ Empty or expired display config requesting via PKI admin")
+										try await accessoryManager.requestDisplayConfig(fromUser: connectedNode.user!, toUser: node.user!)
+									} catch {
+										Logger.mesh.error("🚨 Display config request failed")
+									}
+								}
 							}
 						} else {
 							/// Legacy Administration

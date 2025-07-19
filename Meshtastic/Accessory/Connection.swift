@@ -29,7 +29,7 @@ protocol WirelessConnection: Connection {
 	var rssiDelegate: RSSIDelegate? { get set }
 }
 
-enum ConnectionState {
+enum ConnectionState: Equatable {
 	case disconnected
 	case connecting
 	case connected

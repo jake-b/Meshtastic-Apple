@@ -88,7 +88,9 @@ struct AppSettings: View {
 						titleVisibility: .visible
 					) {
 						Button("Erase all app data?", role: .destructive) {
-							bleManager.disconnectPeripheral()
+							Task {
+								try await accessoryManager.disconnect()
+							}
 							/// Delete any database backups too
 							if var url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
 								url = url.appendingPathComponent("backup").appendingPathComponent(String(UserDefaults.preferredPeripheralNum))

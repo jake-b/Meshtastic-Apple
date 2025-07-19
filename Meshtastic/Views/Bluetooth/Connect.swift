@@ -63,9 +63,9 @@ struct Connect: View {
 										.padding(.trailing)
 										VStack(alignment: .leading) {
 											if node != nil {
-												Text(connectedDevice.longName.addingVariationSelectors).font(.title2)
+												Text(connectedDevice.longName?.addingVariationSelectors ?? "Unknown".localized).font(.title2)
 											}
-											Text("BLE Name").font(.callout)+Text(": \(accessoryManager.activeConnection?.device.name?.addingVariationSelectors ?? "Unknown".localized)")
+											Text("BLE Name").font(.callout)+Text(": \(accessoryManager.activeConnection?.device.name.addingVariationSelectors ?? "Unknown".localized)")
 												.font(.callout).foregroundColor(Color.gray)
 											if node != nil {
 												Text("Firmware Version").font(.callout)+Text(": \(node?.metadata?.firmwareVersion ?? "Unknown".localized)")
@@ -131,7 +131,9 @@ struct Connect: View {
 										if accessoryManager.allowDisconnect {
 											Button(role: .destructive) {
 												if accessoryManager.isConnected {
-													AccessoryManager.disconnect()
+													Task {
+														try await accessoryManager.disconnect()
+													}
 												}
 											} label: {
 												Label("Disconnect", systemImage: "antenna.radiowaves.left.and.right.slash")
@@ -171,7 +173,7 @@ struct Connect: View {
 											.foregroundColor(.orange)
 											.frame(width: 60, height: 60)
 											.padding(.trailing)
-										switch AccessoryManager.state {
+										switch accessoryManager.state {
 										case .connecting:
 											Text("Connecting . .")
 												.font(.title2)
@@ -190,7 +192,7 @@ struct Connect: View {
 									.swipeActions {
 										Button(role: .destructive) {
 											Task {
-												await accessoryManager.disconnect()
+												try await accessoryManager.disconnect()
 											}
 										} label: {
 											Label("Disconnect", systemImage: "antenna.radiowaves.left.and.right.slash")
@@ -199,8 +201,8 @@ struct Connect: View {
 
 								} else {
 
-									if let lastError = AccessoryManager.lastConnectionError {
-										Text(lastError).font(.callout).foregroundColor(.red)
+									if let lastError = accessoryManager.lastConnectionError {
+										Text(lastError.localizedDescription).font(.callout).foregroundColor(.red)
 									}
 									HStack {
 										Image(systemName: "antenna.radiowaves.left.and.right.slash")
@@ -233,7 +235,7 @@ struct Connect: View {
 										Button(action: {
 											if UserDefaults.preferredPeripheralId.count > 0 && device.id.uuidString != UserDefaults.preferredPeripheralId {
 												if let connectedDevice = accessoryManager.activeConnection?.device, accessoryManager.isConnected {
-													accessoryManager.disconnect()
+													Task { try await accessoryManager.disconnect() }
 												}
 												presentingSwitchPreferredPeripheral = true
 												selectedPeripherialId = device.id.uuidString
@@ -258,12 +260,12 @@ struct Connect: View {
 									UserDefaults.preferredPeripheralId = selectedPeripherialId
 									UserDefaults.preferredPeripheralNum = 0
 									if accessoryManager.isConnected {
-										Task { await accessoryManager.disconnect() }
+										Task { try await accessoryManager.disconnect() }
 									}
 									clearCoreDataDatabase(context: context, includeRoutes: false)
 									if let radio = accessoryManager.devices.first(where: { $0.id.uuidString == selectedPeripherialId }) {
 										Task {
-											await accessoryManager.connect(to: radio)
+											try await accessoryManager.connect(to: radio)
 										}
 									}
 								}

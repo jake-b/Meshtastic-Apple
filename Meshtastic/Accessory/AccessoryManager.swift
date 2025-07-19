@@ -18,7 +18,7 @@ enum AccessoryError: Error {
 	// Transport-specific sub-errors can be nested
 }
 
-enum AccessoryManagerState {
+enum AccessoryManagerState: Equatable {
 	case uninitialized
 	case idle
 	case discovering

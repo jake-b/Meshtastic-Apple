@@ -166,7 +166,7 @@ struct DeviceConfig: View {
 					.pickerStyle(DefaultPickerStyle())
 				}
 			}
-			.disabled(self.bleManager.connectedPeripheral == nil || node?.deviceConfig == nil)
+			.disabled(!accessoryManager.isConnected || node?.deviceConfig == nil)
 			// Only show these buttons for the BLE connected node
 			if accessoryManager.isConnected, let device = accessoryManager.activeConnection?.device, node?.num ?? -1 == device.num {
 				HStack {
@@ -188,7 +188,7 @@ struct DeviceConfig: View {
 								do {
 									try await accessoryManager.sendNodeDBReset(fromUser: node!.user!, toUser: node!.user!)
 									try await Task.sleep(for: .seconds(1))
-									accessoryManager.disconnect()
+									try await accessoryManager.disconnect()
 									clearCoreDataDatabase(context: context, includeRoutes: false)
 								} catch {
 									Logger.mesh.error("NodeDB Reset Failed")
@@ -214,7 +214,7 @@ struct DeviceConfig: View {
 								do {
 									try await accessoryManager.sendFactoryReset(fromUser: node!.user!, toUser: node!.user!)
 									try await Task.sleep(for: .seconds(1))
-									accessoryManager.disconnect()
+									try await accessoryManager.disconnect()
 									clearCoreDataDatabase(context: context, includeRoutes: false)
 								} catch {
 									Logger.mesh.error("Factory Reset Failed")
@@ -226,7 +226,7 @@ struct DeviceConfig: View {
 								do {
 									try await accessoryManager.sendFactoryReset(fromUser: node!.user!, toUser: node!.user!, resetDevice: true)
 									try? await Task.sleep(for: .seconds(1))
-									accessoryManager.disconnect()
+									try await accessoryManager.disconnect()
 									clearCoreDataDatabase(context: context, includeRoutes: false)
 								} catch {
 									Logger.mesh.error("Factory Reset Failed")
@@ -251,7 +251,7 @@ struct DeviceConfig: View {
 						dc.tzdef = tzdef
 						dc.ledHeartbeatDisabled = !ledHeartbeatEnabled
 						Task {
-							try await accessoryManager.saveDeviceConfig(config: dc, fromUser: connectedNode!.user!, toUser: node!.user!)
+							try await accessoryManager.saveDeviceConfig(config: dc, fromUser: connectedNode.user!, toUser: node!.user!)
 							Task { @MainActor in
 								// Should show a saved successfully alert once I know that to be true
 								// for now just disable the button after a successful save

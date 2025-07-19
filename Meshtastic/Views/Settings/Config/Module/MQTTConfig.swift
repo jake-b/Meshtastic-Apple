@@ -355,7 +355,7 @@ struct MQTTConfig: View {
 		.onFirstAppear {
 			// Need to request a MqttModuleConfig from the remote node before allowing changes
 			if let deviceNum = accessoryManager.activeDeviceNum, let node {
-				let connectedNode = getNodeInfo(id: connectedPeripheral.num, context: context)
+				let connectedNode = getNodeInfo(id: deviceNum, context: context)
 				if let connectedNode {
 					if node.num != deviceNum {
 						if UserDefaults.enableAdministration && node.num != deviceNum {

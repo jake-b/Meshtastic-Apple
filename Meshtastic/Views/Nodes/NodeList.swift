@@ -67,8 +67,8 @@ struct NodeList: View {
 	var nodes: FetchedResults<NodeInfoEntity>
 
 	var connectedNode: NodeInfoEntity? {
-		if let num = accessoryManger.activeDeviceNum {
-			return getNodeInfo(id: accessoryManager.activeDeviceNum, context: context)
+		if let num = accessoryManager.activeDeviceNum {
+			return getNodeInfo(id: num, context: context)
 		}
 		return nil
 	}
@@ -225,9 +225,12 @@ struct NodeList: View {
 								let deleteNode = getNodeInfo(id: deleteNodeId, context: context)
 								if connectedNode != nil {
 									if deleteNode != nil {
-										let success = accessoryManager.removeNode(node: deleteNode!, connectedNodeNum: Int64(accessoryManager.activeDeviceNum ?? -1))
-										if !success {
-											Logger.data.error("Failed to delete node \(deleteNode?.user?.longName ?? "Unknown".localized, privacy: .public)")
+										Task {
+											do {
+												try await accessoryManager.removeNode(node: deleteNode!, connectedNodeNum: Int64(accessoryManager.activeDeviceNum ?? -1))
+											} catch {
+												Logger.data.error("Failed to delete node \(deleteNode?.user?.longName ?? "Unknown".localized, privacy: .public)")
+											}
 										}
 									}
 								}
@@ -246,7 +249,7 @@ struct NodeList: View {
 							trailing: ZStack {
 								ConnectedDevice(
 									deviceConnected: accessoryManager.isConnected,
-									name: accessoryManager.activeConnection.device?.shortName ?? "?",
+									name: accessoryManager.activeConnection?.device.shortName ?? "?",
 									phoneOnly: true
 								)
 							}

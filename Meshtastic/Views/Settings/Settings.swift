@@ -48,10 +48,10 @@ struct Settings: View {
 			let node = nodes.first(where: { $0.num == preferredNodeNum })
 			if let node,
 				let loRaConfig = node.loRaConfig,
-			    let rc = RegionCodes(rawValue: Int(loRaConfig.regionCode)),
+				let rc = RegionCodes(rawValue: Int(loRaConfig.regionCode)),
 				let user = node.user,
 				!user.isLicensed,
-			    rc.dutyCycle > 0 && rc.dutyCycle < 100 {
+				rc.dutyCycle > 0 && rc.dutyCycle < 100 {
 				Label {
 					Text("Hourly Duty Cycle")
 				} icon: {
@@ -344,37 +344,37 @@ struct Settings: View {
 		) {
 			let node = nodes.first(where: { $0.num == preferredNodeNum })
 			List {
-				NavigationLink(value: SettingsNavigationState.about) {
-					Label {
-						Text("About Meshtastic")
-					} icon: {
-						Image(systemName: "questionmark.app")
-					}
-				}
-
-				NavigationLink(value: SettingsNavigationState.appSettings) {
-					Label {
-						Text("App Settings")
-					} icon: {
-						Image(systemName: "gearshape")
-					}
-				}
-				NavigationLink(value: SettingsNavigationState.routes) {
-					Label {
-						Text("Routes")
-					} icon: {
-						Image(systemName: "road.lanes.curved.right")
-					}
-				}
-
-				NavigationLink(value: SettingsNavigationState.routeRecorder) {
-					Label {
-						Text("Route Recorder")
-					} icon: {
-						Image(systemName: "record.circle")
-							.foregroundColor(.red)
-					}
-				}
+//				NavigationLink(value: SettingsNavigationState.about) {
+//					Label {
+//						Text("About Meshtastic")
+//					} icon: {
+//						Image(systemName: "questionmark.app")
+//					}
+//				}
+//
+//				NavigationLink(value: SettingsNavigationState.appSettings) {
+//					Label {
+//						Text("App Settings")
+//					} icon: {
+//						Image(systemName: "gearshape")
+//					}
+//				}
+//				NavigationLink(value: SettingsNavigationState.routes) {
+//					Label {
+//						Text("Routes")
+//					} icon: {
+//						Image(systemName: "road.lanes.curved.right")
+//					}
+//				}
+//
+//				NavigationLink(value: SettingsNavigationState.routeRecorder) {
+//					Label {
+//						Text("Route Recorder")
+//					} icon: {
+//						Image(systemName: "record.circle")
+//							.foregroundColor(.red)
+//					}
+//				}
 
 				if !(node?.deviceConfig?.isManaged ?? false) {
 					if accessoryManager.isConnected {
@@ -386,7 +386,7 @@ struct Settings: View {
 									}
 									ForEach(nodes) { node in
 										/// Connected Node
-										if node.num == bleManager.connectedPeripheral?.num ?? 0 {
+										if node.num == accessoryManager.activeDeviceNum ?? 0 {
 											Label {
 												Text("BLE: \(node.user?.longName?.addingVariationSelectors ?? "Unknown".localized)")
 											} icon: {
@@ -426,23 +426,25 @@ struct Settings: View {
 									}
 								}
 								.pickerStyle(.navigationLink)
-								.onChange(of: selectedNode) { _, newValue in
-									if selectedNode > 0 {
-										let node = nodes.first(where: { $0.num == newValue })
-										let connectedNode = nodes.first(where: { $0.num == preferredNodeNum })
-										preferredNodeNum = Int(connectedNode?.num ?? 0)// Int(bleManager.connectedPeripheral != nil ? bleManager.connectedPeripheral?.num ?? 0 : 0)
-										if connectedNode != nil && connectedNode?.user != nil && connectedNode?.myInfo != nil && node?.user != nil {// && node?.metadata == nil {
-											let adminMessageId =  bleManager.requestDeviceMetadata(fromUser: connectedNode!.user!, toUser: node!.user!, context: context)
-											if adminMessageId > 0 {
-												Logger.mesh.info("Sent node metadata request from node details")
-											}
-										}
-									}
-								}
+//								.onChange(of: selectedNode) { _, newValue in
+//									if selectedNode > 0 {
+//										let node = nodes.first(where: { $0.num == newValue })
+//										let connectedNode = nodes.first(where: { $0.num == preferredNodeNum })
+//										preferredNodeNum = Int(connectedNode?.num ?? 0)// Int(bleManager.connectedPeripheral != nil ? bleManager.connectedPeripheral?.num ?? 0 : 0)
+//										if connectedNode != nil && connectedNode?.user != nil && connectedNode?.myInfo != nil && node?.user != nil {// && node?.metadata == nil {
+//											Task {
+//												try await accessoryManager.requestDeviceMetadata(fromUser: connectedNode!.user!, toUser: node!.user!, context: context)
+//												Task { @MainActor in
+//													Logger.mesh.info("Sent node metadata request from node details")
+//												}
+//											}
+//										}
+//									}
+//								}
 								TipView(AdminChannelTip(), arrowEdge: .top)
 									.tipViewStyle(PersistentTip())
 							} else {
-								if bleManager.connectedPeripheral != nil {
+								if accessoryManager.isConnected {
 									Text("Connected Node \(node?.user?.longName?.addingVariationSelectors ?? "Unknown".localized)")
 								}
 							}

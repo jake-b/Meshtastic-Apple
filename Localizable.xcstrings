@@ -618,6 +618,7 @@
       }
     },
     "%@ Please try connecting again and check the PIN carefully." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -676,6 +677,7 @@
       }
     },
     "%@ The app will automatically reconnect to the preferred radio if it comes back in range." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -734,6 +736,7 @@
       }
     },
     "%@ This error usually cannot be fixed without forgetting the device under Settings > Bluetooth and re-connecting to the radio." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1814,6 +1817,7 @@
       }
     },
     "About Meshtastic" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -4339,9 +4343,6 @@
           }
         }
       }
-    },
-    "BLE RSSI %lld" : {
-
     },
     "BLE: %@" : {
       "localizations" : {
@@ -7092,6 +7093,7 @@
       }
     },
     "Connection failed after %d attempts to connect to %@. You may need to forget your device under Settings > Bluetooth." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15362,6 +15364,7 @@
       }
     },
     "Issuing Want Config to %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "fr" : {
           "stringUnit" : {
@@ -17354,6 +17357,7 @@
       }
     },
     "Message Send Failed, not properly connected to %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -23243,6 +23247,7 @@
       }
     },
     "Radio Disconnected" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -25035,6 +25040,7 @@
       }
     },
     "Route Recorder" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -25169,6 +25175,7 @@
       }
     },
     "Routes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -28734,6 +28741,9 @@
         }
       }
     },
+    "Some OTHER state" : {
+
+    },
     "Specifies how long the monitored GPIO should output." : {
       "localizations" : {
         "it" : {
@@ -30544,6 +30554,7 @@
       }
     },
     "The specified device has disconnected from us" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -32772,6 +32783,7 @@
       }
     },
     "Unsupported Firmware Version Detected, unable to connect to device." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -33436,6 +33448,7 @@
       }
     },
     "User Initiated Disconnect" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {

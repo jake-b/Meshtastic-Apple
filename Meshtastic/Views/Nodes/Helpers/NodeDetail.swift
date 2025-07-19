@@ -506,10 +506,9 @@ struct NodeDetail: View {
 							Button {
 								Task {
 									do {
-										try await accessoryManager.requestDeviceMetadata(
+										_ = try await accessoryManager.requestDeviceMetadata(
 											fromUser: connectedNode.user!,
 											toUser: node.user!,
-											context: context
 										)
 										Logger.mesh.info("Sent node metadata request from node details")
 									} catch {
@@ -566,7 +565,7 @@ struct NodeDetail: View {
 									do {
 										try await accessoryManager.sendReboot(
 											fromUser: connectedNode.user!,
-											toUser: node.user!
+											toUser: node.user! )
 									} catch {
 										Logger.mesh.warning("Reboot Failed")
 									}
