@@ -13,6 +13,8 @@
 		231B3F222D087A4C0069A07D /* MetricsColumnList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231B3F1F2D087A4C0069A07D /* MetricsColumnList.swift */; };
 		231B3F252D087C3C0069A07D /* EnvironmentDefaultColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231B3F242D087C3C0069A07D /* EnvironmentDefaultColumns.swift */; };
 		231B3F272D0885240069A07D /* MetricsColumnDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231B3F262D0885240069A07D /* MetricsColumnDetail.swift */; };
+		232ED4C32E2C5E89009DA392 /* TCPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232ED4C22E2C5E89009DA392 /* TCPTransport.swift */; };
+		232ED4C52E2C5EDD009DA392 /* TCPConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232ED4C42E2C5EDD009DA392 /* TCPConnection.swift */; };
 		233E99B62D849C3D00CC3A77 /* WeatherConditionsCompactWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233E99B52D849C3D00CC3A77 /* WeatherConditionsCompactWidget.swift */; };
 		233E99B82D849C6500CC3A77 /* HumidityCompactWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233E99B72D849C6500CC3A77 /* HumidityCompactWidget.swift */; };
 		233E99BA2D849C7000CC3A77 /* PressureCompactWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233E99B92D849C7000CC3A77 /* PressureCompactWidget.swift */; };
@@ -297,6 +299,8 @@
 		231B3F202D087A4C0069A07D /* MetricTableColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricTableColumn.swift; sourceTree = "<group>"; };
 		231B3F242D087C3C0069A07D /* EnvironmentDefaultColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentDefaultColumns.swift; sourceTree = "<group>"; };
 		231B3F262D0885240069A07D /* MetricsColumnDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsColumnDetail.swift; sourceTree = "<group>"; };
+		232ED4C22E2C5E89009DA392 /* TCPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TCPTransport.swift; sourceTree = "<group>"; };
+		232ED4C42E2C5EDD009DA392 /* TCPConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TCPConnection.swift; sourceTree = "<group>"; };
 		233E99B32D84969500CC3A77 /* MeshtasticDataModelV 50.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "MeshtasticDataModelV 50.xcdatamodel"; sourceTree = "<group>"; };
 		233E99B52D849C3D00CC3A77 /* WeatherConditionsCompactWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherConditionsCompactWidget.swift; sourceTree = "<group>"; };
 		233E99B72D849C6500CC3A77 /* HumidityCompactWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HumidityCompactWidget.swift; sourceTree = "<group>"; };
@@ -687,6 +691,8 @@
 				23AD546C2E2AE9630046E9AB /* AccessoryManager+MQTT.swift */,
 				237AEB962E1FE627003B7CE3 /* BLETransport.swift */,
 				237AEB982E20098B003B7CE3 /* BLEConnection.swift */,
+				232ED4C22E2C5E89009DA392 /* TCPTransport.swift */,
+				232ED4C42E2C5EDD009DA392 /* TCPConnection.swift */,
 			);
 			path = Accessory;
 			sourceTree = "<group>";
@@ -1526,6 +1532,7 @@
 				DD3CC6C228EB9D4900FA9159 /* UpdateCoreData.swift in Sources */,
 				DDE0F7C5295F77B700B8AAB3 /* AppSettingsEnums.swift in Sources */,
 				DDB6ABE628B1406100384BA1 /* LoraConfigEnums.swift in Sources */,
+				232ED4C52E2C5EDD009DA392 /* TCPConnection.swift in Sources */,
 				DDB8F4142A9EE5F000230ECE /* ChannelList.swift in Sources */,
 				DDD43FE32A78C8900083A3E9 /* MqttClientProxyManager.swift in Sources */,
 				BCD7448D2E0F2FAA00F265A2 /* ContactURLHandler.swift in Sources */,
@@ -1644,6 +1651,7 @@
 				DDAB580F2B0DAFBC00147258 /* LocationEntityExtension.swift in Sources */,
 				233E99BC2D849C8C00CC3A77 /* WindCompactWidget.swift in Sources */,
 				B3E905B12B71F7F300654D07 /* TextMessageField.swift in Sources */,
+				232ED4C32E2C5E89009DA392 /* TCPTransport.swift in Sources */,
 				BC6B45FF2CB2F98900723CEB /* SaveChannelSettingsIntent.swift in Sources */,
 				D93068D72B8146690066FBC8 /* MessageText.swift in Sources */,
 				DDC2E15826CE248E0042C5E4 /* MeshtasticApp.swift in Sources */,

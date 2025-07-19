@@ -69,7 +69,7 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 		self.activeConnection?.connection.isConnected ?? false
 	}
 
-	init(transports: [any Transport] = [BLETransport()]) {
+	init(transports: [any Transport] = [BLETransport(), TCPTransport()]) {
 		self.transports = transports
 		self.state = .uninitialized
 		self.mqttManager.delegate = self
