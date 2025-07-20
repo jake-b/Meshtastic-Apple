@@ -34,3 +34,7 @@ enum ConnectionState: Equatable {
 	case connecting
 	case connected
 }
+
+enum ConnectionError: Error {
+	case ioError(String)
+}

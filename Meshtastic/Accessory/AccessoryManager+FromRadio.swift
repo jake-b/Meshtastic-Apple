@@ -166,6 +166,9 @@ extension AccessoryManager {
 			Logger.services.error("Attempt to process device metadata information when no connected device.")
 			return
 		}
+
+		Logger.mesh.debug("GOT DEVICE VERSION: \(metadata.firmwareVersion)")
+
 		updateDevice(key: \.firmwareVersion, value: metadata.firmwareVersion)
 		Task { @MainActor in
 			deviceMetadataPacket(metadata: metadata, fromNum: deviceNum, context: context)

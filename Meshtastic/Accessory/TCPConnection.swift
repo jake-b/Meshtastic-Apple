@@ -43,37 +43,57 @@ class TCPConnection: Connection {
 		startReader()
 	}
 
+	private func waitForMagicBytes() async throws -> Bool {
+		let startOfFrame: [UInt8] = [0x94, 0xc3]
+		var waitingOnByte = 0
+		while true {
+			let data = try await receiveData(min: 1, max: 1)
+			if data.count != 1 {
+				// End of stream
+				return false
+			}
+
+			if data[0] == startOfFrame[waitingOnByte] {
+				waitingOnByte += 1
+			} else {
+				waitingOnByte = 0
+			}
+
+			if waitingOnByte > 1 {
+				return true
+			}
+		}
+	}
+
+	private func readInteger() async throws -> UInt16? {
+		let data = try await receiveData(min: 2, max: 2)
+		if data.count == 2 {
+			let value = data.withUnsafeBytes { $0.load(as: UInt16.self).bigEndian }
+			return value
+		}
+		return nil
+	}
+
 	private func startReader() {
-		readerTask = Task {
-			var buffer = Data()
+		// TODO: @MainActor here because packets come into AccessoryManager out of order otherwise.  Need to figure out the concurrency
+		readerTask = Task { @MainActor in
 			while isConnected {
 				do {
-					let data = try await receiveData(min: 1, max: 65535)
-					if data.isEmpty {
-						break // EOF
+					if try await waitForMagicBytes() == false {
+						Logger.data.debug("TCPConnection: EOF while waiting for magic bytes")
+						continue
 					}
-					buffer.append(data)
+					Logger.data.debug("Found magic byte, waiting for length")
 
-					while buffer.count >= 4 {
-						guard buffer[0] == 0x94 && buffer[1] == 0xc3 else {
-							Logger.services.error("Bad magic in TCP frame")
-							throw AccessoryError.ioFailed("Bad magic in TCP frame")
-						}
-
-						let lenData = buffer[2..<4]
-						let len = lenData.withUnsafeBytes { $0.load(as: UInt16.self).bigEndian }
-
-						if buffer.count >= Int(len) + 4 {
-							let payload = buffer[4..<Int(len) + 4]
-							if let fromRadio = try? FromRadio(serializedBytes: payload) {
-								packetDelegate?.didReceive(result: .success(fromRadio))
-							} else {
-								Logger.services.error("Failed to deserialize FromRadio")
-							}
-							buffer.removeFirst(Int(len) + 4)
+					if let length = try? await readInteger() {
+						let payload = try await receiveData(min: Int(length), max: Int(length))
+						if let fromRadio = try? FromRadio(serializedBytes: payload) {
+							packetDelegate?.didReceive(result: .success(fromRadio))
 						} else {
-							break
+							Logger.services.error("Failed to deserialize FromRadio")
 						}
+					} else {
+						Logger.data.debug("TCPConnection: EOF while waiting for length")
 					}
 				} catch {
 					Logger.services.error("Error reading from TCP: \(error)")
@@ -81,6 +101,7 @@ class TCPConnection: Connection {
 					break
 				}
 			}
+			Logger.services.error("End of TCP reading task: isConnected:\(self.isConnected)")
 		}
 	}
 
@@ -104,7 +125,7 @@ class TCPConnection: Connection {
 		let serialized = try data.serializedData()
 		var buffer = Data()
 		buffer.append(0x94)
-		buffer.append(0x73)
+		buffer.append(0xc3)
 		var len = UInt16(serialized.count).bigEndian
 		withUnsafeBytes(of: &len) { buffer.append(contentsOf: $0) }
 		buffer.append(serialized)

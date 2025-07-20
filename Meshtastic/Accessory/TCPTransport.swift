@@ -139,22 +139,22 @@ class TCPTransport: NSObject, Transport, NetServiceBrowserDelegate, NetServiceDe
 	}
 }
 
-	extension NetService {
-		var ipv4Address: String? {
-			for addressData in addresses ?? [] {
-				// sockaddr_in is typically 16 bytes; skip if too small
-				guard addressData.count >= 16 else { continue }
+extension NetService {
+	var ipv4Address: String? {
+		for addressData in addresses ?? [] {
+			// sockaddr_in is typically 16 bytes; skip if too small
+			guard addressData.count >= 16 else { continue }
 
-				// Byte 1: sin_family (AF_INET == 2 for IPv4)
-				let family = addressData[1]
-				guard family == UInt8(AF_INET) else { continue }
+			// Byte 1: sin_family (AF_INET == 2 for IPv4)
+			let family = addressData[1]
+			guard family == UInt8(AF_INET) else { continue }
 
-				// Bytes 4-7: sin_addr.s_addr (IPv4 address in network byte order)
-				let ipBytes = addressData[4..<8]
+			// Bytes 4-7: sin_addr.s_addr (IPv4 address in network byte order)
+			let ipBytes = addressData[4..<8]
 
-				// Convert each byte to string and join with dots
-				return ipBytes.map { String($0) }.joined(separator: ".")
-			}
-			return nil
+			// Convert each byte to string and join with dots
+			return ipBytes.map { String($0) }.joined(separator: ".")
 		}
+		return nil
 	}
+}
