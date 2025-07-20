@@ -199,6 +199,10 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 
 				await sendWantConfig()
 
+				if UserDefaults.firstLaunch {
+					UserDefaults.showDeviceOnboarding = true
+				}
+
 				await sendWantDatabase()
 
 				Task { @MainActor in self.allowDisconnect = true }
@@ -459,6 +463,8 @@ class AccessoryManager: ObservableObject, PacketDelegate, MqttClientProxyManager
 					Logger.mesh.warning("🕸️ MESH PACKET received for Key Verification App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
 				case .unknownApp:
 					Logger.mesh.warning("🕸️ MESH PACKET received for unknown App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+				case .cayenneApp:
+					Logger.mesh.info("🕸️ MESH PACKET received Cayenne App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
 				}
 			}
 

@@ -83,11 +83,9 @@ struct SendWaypointIntent: AppIntent {
 		newWaypoint.icon = unicode
 		newWaypoint.name = name
 		newWaypoint.description_p = description
-
 		if let expirationDate = expiration {
 			newWaypoint.expire = UInt32(expirationDate.timeIntervalSince1970)
 		}
-
 		if isLocked {
 			if let deviceNum = AccessoryManager.shared.activeDeviceNum {
 				newWaypoint.lockedTo = UInt32(deviceNum)

@@ -17,7 +17,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 
 	let context: NSManagedObjectContext
 
-	private var centralManager: CBCentralManager?
+	private var centralManager: CBCentralManager!
 
 	@Published var peripherals: [Peripheral] = []
 	@Published var connectedPeripheral: Peripheral!
@@ -60,9 +60,9 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 	let NONCE_ONLY_DB = 69421
 	private var isWaitingForWantConfigResponse = false
 
-    private var wantConfigTimer: Timer?
-    private var wantConfigRetryCount = 0
-    private let maxWantConfigRetries = 6
+	private var wantConfigTimer: Timer?
+	private var wantConfigRetryCount = 0
+	private let maxWantConfigRetries = 6
 	private let wantConfigTimeoutInterval: TimeInterval = 6.0
 
 	// MARK: init
@@ -85,7 +85,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 		self.lastConnectionError = ""
 		self.connectedVersion = "0.0.0"
 		super.init()
-		centralManager = nil // CBCentralManager(delegate: self, queue: nil)
+		centralManager = CBCentralManager(delegate: self, queue: nil)
 		mqttManager.delegate = self
 		// Run clearStaleNodes every hour
 		maintenanceTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true, block: { _ in
@@ -101,15 +101,15 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 	// Scan for nearby BLE devices using the Meshtastic BLE service ID
 	func startScanning() {
 		if isSwitchedOn {
-			centralManager?.scanForPeripherals(withServices: [meshtasticServiceCBUUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+			centralManager.scanForPeripherals(withServices: [meshtasticServiceCBUUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
 			Logger.services.info("✅ [BLE] Scanning Started")
 		}
 	}
 
 	// Stop Scanning For BLE Devices
 	func stopScanning() {
-		if centralManager?.isScanning ?? false {
-			centralManager?.stopScan()
+		if centralManager.isScanning {
+			centralManager.stopScan()
 			Logger.services.info("🛑 [BLE] Stopped Scanning")
 		}
 	}
@@ -367,6 +367,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 			case FROMRADIO_UUID:
 				Logger.services.info("✅ [BLE] did discover FROMRADIO characteristic for Meshtastic by \(peripheral.name ?? "Unknown", privacy: .public)")
 				FROMRADIO_characteristic = characteristic
+				peripheral.readValue(for: FROMRADIO_characteristic)
 
 			case FROMNUM_UUID:
 				Logger.services.info("✅ [BLE] did discover FROMNUM (Notify) characteristic for Meshtastic by \(peripheral.name ?? "Unknown", privacy: .public)")
@@ -498,7 +499,11 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 
 			let traceRoute = TraceRouteEntity(context: context)
 			let nodes = NodeInfoEntity.fetchRequest()
-			nodes.predicate = NSPredicate(format: "num IN %@", [destNum, self.connectedPeripheral.num])
+			if let connectedNum = self.connectedPeripheral?.num {
+				nodes.predicate = NSPredicate(format: "num IN %@", [destNum, connectedNum])
+			} else {
+				nodes.predicate = NSPredicate(format: "num == %@", destNum)
+			}
 			do {
 				let fetchedNodes = try context.fetch(nodes)
 				let receivingNode = fetchedNodes.first(where: { $0.num == destNum })
@@ -559,7 +564,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 		 connectedPeripheral!.peripheral.writeValue(binaryData, for: TORADIO_characteristic, type: .withResponse)
 		 // Either Read the config complete value or from num notify value
 		 guard connectedPeripheral != nil else { return }
-
+		 connectedPeripheral!.peripheral.readValue(for: FROMRADIO_characteristic)
 		 // Start timeout timer
 		 startWantConfigTimeout()
 	 }
@@ -794,31 +799,39 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 						}
 					}
 				}
+				guard let cp = connectedPeripheral else {
+					return
+				}
 				// Channels
-				if decodedInfo.channel.isInitialized && connectedPeripheral != nil {
+				if decodedInfo.channel.isInitialized {
 					nowKnown = true
-					channelPacket(channel: decodedInfo.channel, fromNum: Int64(truncatingIfNeeded: connectedPeripheral.num), context: context)
+					channelPacket(channel: decodedInfo.channel, fromNum: Int64(truncatingIfNeeded: cp.num), context: context)
 				}
 				// Config
-				if decodedInfo.config.isInitialized && !invalidVersion && connectedPeripheral != nil {
+				if decodedInfo.config.isInitialized && !invalidVersion && cp.num != 0 {
 					nowKnown = true
-					localConfig(config: decodedInfo.config, context: context, nodeNum: Int64(truncatingIfNeeded: self.connectedPeripheral.num), nodeLongName: self.connectedPeripheral.longName)
+					localConfig(config: decodedInfo.config, context: context, nodeNum: Int64(truncatingIfNeeded: cp.num), nodeLongName: cp.longName)
 				}
 				// Module Config
-				if decodedInfo.moduleConfig.isInitialized && !invalidVersion && self.connectedPeripheral?.num != 0 {
+				if decodedInfo.moduleConfig.isInitialized && !invalidVersion && cp.num != 0 {
 					onWantConfigResponseReceived()
 					nowKnown = true
-					moduleConfig(config: decodedInfo.moduleConfig, context: context, nodeNum: Int64(truncatingIfNeeded: self.connectedPeripheral?.num ?? 0), nodeLongName: self.connectedPeripheral.longName)
+					moduleConfig(config: decodedInfo.moduleConfig, context: context, nodeNum: Int64(truncatingIfNeeded: cp.num), nodeLongName: cp.longName)
 					if decodedInfo.moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.cannedMessage(decodedInfo.moduleConfig.cannedMessage) {
-						if decodedInfo.moduleConfig.cannedMessage.enabled {
-							_ = self.getCannedMessageModuleMessages(destNum: self.connectedPeripheral.num, wantResponse: true)
+						_ = self.getCannedMessageModuleMessages(destNum: cp.num, wantResponse: true)
+					}
+					if decodedInfo.config.payloadVariant == Config.OneOf_PayloadVariant.device(decodedInfo.config.device) {
+						var dc = decodedInfo.config.device
+						if dc.tzdef.isEmpty {
+							dc.tzdef =  TimeZone.current.posixDescription
+							_ = self.saveTimeZone(config: dc, user: cp.num)
 						}
 					}
 				}
 				// Device Metadata
 				if decodedInfo.metadata.firmwareVersion.count > 0 && !invalidVersion {
 					nowKnown = true
-					deviceMetadataPacket(metadata: decodedInfo.metadata, fromNum: connectedPeripheral.num, context: context)
+					deviceMetadataPacket(metadata: decodedInfo.metadata, fromNum: cp.num, context: context)
 					connectedPeripheral.firmwareVersion = decodedInfo.metadata.firmwareVersion
 					let lastDotIndex = decodedInfo.metadata.firmwareVersion.lastIndex(of: ".")
 					if lastDotIndex == nil {
@@ -830,7 +843,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 						connectedVersion = String(version.dropLast())
 						UserDefaults.firmwareVersion = connectedVersion
 					}
-					let supportedVersion = accessoryManager.checkIsVersionSupported(forVersion: minimumVersion)
+					let supportedVersion = connectedVersion == "0.0.0" ||  self.minimumVersion.compare(connectedVersion, options: .numeric) == .orderedAscending || minimumVersion.compare(connectedVersion, options: .numeric) == .orderedSame
 					if !supportedVersion {
 						invalidVersion = true
 						lastConnectionError = "🚨" + "Update Your Firmware".localized
@@ -865,7 +878,13 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 			case .nodeinfoApp:
 				if !invalidVersion { upsertNodeInfoPacket(packet: decodedInfo.packet, context: context) }
 			case .routingApp:
-				if !invalidVersion { routingPacket(packet: decodedInfo.packet, connectedNodeNum: self.connectedPeripheral.num, context: context) }
+				if !invalidVersion {
+					guard let peripheral = self.connectedPeripheral else {
+						Logger.mesh.error("🕸️ connectedPeripheral is nil. Unable to determine connectedNodeNum for routingPacket.")
+						return
+					}
+					routingPacket(packet: decodedInfo.packet, connectedNodeNum: peripheral.num, context: context)
+				}
 			case .adminApp:
 				adminAppPacket(packet: decodedInfo.packet, context: context)
 			case .replyApp:
@@ -1071,6 +1090,8 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 				Logger.mesh.info("🕸️ MESH PACKET received for Reticulum Tunnel App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
 			case .keyVerificationApp:
 				Logger.mesh.warning("🕸️ MESH PACKET received for Key Verification App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+			case .cayenneApp:
+				Logger.mesh.info("🕸️ MESH PACKET received Cayenne App UNHANDLED \((try? decodedInfo.packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
 			}
 
 			if decodedInfo.configCompleteID != 0 && decodedInfo.configCompleteID == NONCE_ONLY_CONFIG {
@@ -1079,6 +1100,9 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 				isSubscribed = true
 				allowDisconnect = true
 				Logger.mesh.info("🤜 [BLE] Want Config Complete. ID:\(decodedInfo.configCompleteID, privacy: .public)")
+				if UserDefaults.firstLaunch {
+					UserDefaults.showDeviceOnboarding = true
+				}
 				if sendTime() {
 				}
 				peripherals.removeAll(where: { $0.peripheral.state == CBPeripheralState.disconnected })
@@ -1118,7 +1142,6 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 					sendWantConfig()
 
 				}
-
 				// MARK: Share Location Position Update Timer
 				// Use context to pass the radio name with the timer
 				// Use a RunLoop to prevent the timer from running on the main UI thread
@@ -1134,7 +1157,6 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 			if decodedInfo.configCompleteID != 0 && decodedInfo.configCompleteID == NONCE_ONLY_DB {
 				Logger.mesh.info("🤜 [BLE] Want Config DB Complete. ID:\(decodedInfo.configCompleteID, privacy: .public)")
 			}
-
 		case FROMNUM_UUID:
 			Logger.services.info("🗞️ [BLE] (Notify) characteristic value will be read next")
 		default:
@@ -1172,7 +1194,10 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 			success = false
 
 		} else {
-			let fromUserNum: Int64 = self.connectedPeripheral.num
+			guard let fromUserNum = self.connectedPeripheral?.num else {
+				Logger.mesh.error("🚫 Connected peripheral user number is nil, cannot send message.")
+				return false
+			}
 
 			let messageUsers = UserEntity.fetchRequest()
 			messageUsers.predicate = NSPredicate(format: "num IN %@", [fromUserNum, Int64(toUserNum)])
@@ -1228,8 +1253,16 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 							newMessage.toUser?.userNode?.favorite = true
 							do {
 								try context.save()
-								Logger.data.info("💾 Auto favorited node bases on sending a message \(self.connectedPeripheral.num.toHex(), privacy: .public) to \(toUserNum.toHex(), privacy: .public)")
-								_ = self.setFavoriteNode(node: (newMessage.toUser?.userNode)!, connectedNodeNum: fromUserNum)
+								if let connectedPeripheral = self.connectedPeripheral {
+									Logger.data.info("💾 Auto favorited node based on sending a message \(connectedPeripheral.num.toHex(), privacy: .public) to \(toUserNum.toHex(), privacy: .public)")
+								} else {
+									Logger.data.warning("⚠️ connectedPeripheral is nil while attempting to log auto-favoriting a node.")
+								}
+								guard let userNode = newMessage.toUser?.userNode else {
+									Logger.data.warning("⚠️ Unable to set favorite node: userNode is nil.")
+									return false
+								}
+								_ = self.setFavoriteNode(node: userNode, connectedNodeNum: fromUserNum)
 							} catch {
 								context.rollback()
 								let nsError = error as NSError
@@ -1265,7 +1298,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 						Logger.mesh.info("💬 \(logString, privacy: .public)")
 						do {
 							try context.save()
-							Logger.data.info("💾 Saved a new sent message from \(self.connectedPeripheral.num.toHex(), privacy: .public) to \(toUserNum.toHex(), privacy: .public)")
+							Logger.data.info("💾 Saved a new sent message from \(self.connectedPeripheral?.num.toHex() ?? "0", privacy: .public) to \(toUserNum.toHex(), privacy: .public)")
 							success = true
 
 						} catch {
@@ -1276,7 +1309,7 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 					}
 				}
 			} catch {
-				Logger.data.error("💥 Send message failure \(self.connectedPeripheral.num.toHex(), privacy: .public) to \(toUserNum.toHex(), privacy: .public)")
+				Logger.data.error("💥 Send message failure \(self.connectedPeripheral?.num.toHex() ?? "0", privacy: .public) to \(toUserNum.toHex(), privacy: .public)")
 			}
 		}
 		return success
@@ -1493,6 +1526,10 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 	}
 
 	public func sendTime() -> Bool {
+		if self.connectedPeripheral?.num ?? 0 <= 0 {
+			Logger.mesh.error("🚫 Unable to send time, connected node is disconnected or invalid")
+			return false
+		}
 		var adminPacket = AdminMessage()
 		adminPacket.setTimeOnly = UInt32(Date().timeIntervalSince1970)
 		var meshPacket: MeshPacket = MeshPacket()
@@ -2198,6 +2235,29 @@ class BLEManager: NSObject, CBPeripheralDelegate, MqttClientProxyManagerDelegate
 		let messageDescription = "🛟 Saved Device Config for \(toUser.longName ?? "Unknown".localized)"
 		if sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription) {
 			upsertDeviceConfigPacket(config: config, nodeNum: toUser.num, sessionPasskey: toUser.userNode?.sessionPasskey, context: context)
+			return Int64(meshPacket.id)
+		}
+		return 0
+	}
+	public func saveTimeZone(config: Config.DeviceConfig, user: Int64) -> Int64 {
+
+		var adminPacket = AdminMessage()
+		adminPacket.setConfig.device = config
+		var meshPacket: MeshPacket = MeshPacket()
+		meshPacket.to = UInt32(user)
+		meshPacket.from	= UInt32(user)
+		meshPacket.id = UInt32.random(in: UInt32(UInt8.max)..<UInt32.max)
+		meshPacket.priority =  MeshPacket.Priority.reliable
+		meshPacket.wantAck = true
+		var dataMessage = DataMessage()
+		guard let adminData: Data = try? adminPacket.serializedData() else {
+			return 0
+		}
+		dataMessage.payload = adminData
+		dataMessage.portnum = PortNum.adminApp
+		meshPacket.decoded = dataMessage
+		let messageDescription = "⌚ Device Config timezone was empty set timezone to \(config.tzdef)"
+		if sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription) {
 			return Int64(meshPacket.id)
 		}
 		return 0

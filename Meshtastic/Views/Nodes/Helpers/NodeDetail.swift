@@ -19,22 +19,17 @@ struct NodeDetail: View {
 	var modemPreset: ModemPresets = ModemPresets(
 		rawValue: UserDefaults.modemPreset
 	) ?? ModemPresets.longFast
-
 	@Environment(\.managedObjectContext) var context
 	@EnvironmentObject var accessoryManager: AccessoryManager
 	@State private var showingShutdownConfirm: Bool = false
 	@State private var showingRebootConfirm: Bool = false
 	@State private var dateFormatRelative: Bool = true
-
 	// The node the device is currently connected to
 	var connectedNode: NodeInfoEntity?
-
 	// The node information being displayed on the detail screen
 	@ObservedObject
 	var node: NodeInfoEntity
-
 	var columnVisibility = NavigationSplitViewVisibility.all
-
 	var body: some View {
 		NavigationStack {
 			List {
@@ -42,7 +37,6 @@ struct NodeDetail: View {
 					id: accessoryManager.activeDeviceNum ?? -1,
 					context: context
 				)
-
 				Section("Hardware") {
 					NodeInfoItem(node: node)
 				}
@@ -106,10 +100,9 @@ struct NodeDetail: View {
 						}
 						Spacer()
 						Text(String(node.num))
-						.textSelection(.enabled)
+							.textSelection(.enabled)
 					}
 					.accessibilityElement(children: .combine)
-
 					HStack {
 						Label {
 							Text("User Id")
@@ -119,35 +112,35 @@ struct NodeDetail: View {
 						}
 						Spacer()
 						Text(node.num.toHex())
-						.textSelection(.enabled)
+							.textSelection(.enabled)
 					}
 					.accessibilityElement(children: .combine)
-
-					if node.user?.keyMatch ?? false {
-						if let publicKey = node.user?.publicKey {
-							HStack {
-								Label {
-									Text("Public Key")
-								} icon: {
-									Image(systemName: "lock.fill")
-										.foregroundColor(.green)
-								}
-								Spacer()
-								Button(action: {
-									context.perform {
-										UIPasteboard.general.string = publicKey.base64EncodedString()
+					let connectedNode = getNodeInfo(id: accessoryManager.activeDeviceNum ?? 0, context: context)
+							if let user = node.user, user.keyMatch {
+								let publicKey = node.num == connectedNode?.num
+									? node.securityConfig?.publicKey?.base64EncodedString() ?? ""
+									: user.publicKey?.base64EncodedString() ?? ""
+								HStack {
+									Label {
+										Text("Public Key")
+									} icon: {
+										Image(systemName: "lock.fill")
+											.foregroundColor(.green)
 									}
-								}) {
-									HStack {
-										Image(systemName: "key.horizontal.fill")
-										Text("Copy")
+									Spacer()
+									Button(action: {
+										context.perform {
+											UIPasteboard.general.string = publicKey
+										}
+									}) {
+										HStack {
+											Image(systemName: "key.horizontal.fill")
+											Text("Copy")
+										}
 									}
 								}
+								.accessibilityElement(children: .combine)
 							}
-							.accessibilityElement(children: .combine)
-						}
-					}
-
 					if let metadata = node.metadata {
 						HStack {
 							Label {
@@ -157,12 +150,10 @@ struct NodeDetail: View {
 									.symbolRenderingMode(.multicolor)
 							}
 							Spacer()
-
 							Text(metadata.firmwareVersion ?? "Unknown".localized)
 						}
 						.accessibilityElement(children: .combine)
 					}
-
 					if let role = node.user?.role, let deviceRole = DeviceRoles(rawValue: Int(role)) {
 						HStack {
 							Label {
@@ -189,7 +180,6 @@ struct NodeDetail: View {
 						}
 						.accessibilityElement(children: .combine)
 					}
-
 					if let dm = node.telemetries?.filtered(using: NSPredicate(format: "metricsType == 0")).lastObject as? TelemetryEntity, let uptimeSeconds = dm.uptimeSeconds {
 						HStack {
 							Label {
@@ -200,7 +190,6 @@ struct NodeDetail: View {
 									.symbolRenderingMode(.hierarchical)
 							}
 							Spacer()
-
 							let now = Date.now
 							let later = now + TimeInterval(uptimeSeconds)
 							let uptime = (now..<later).formatted(.components(style: .narrow))
@@ -209,7 +198,6 @@ struct NodeDetail: View {
 						}
 						.accessibilityElement(children: .combine)
 					}
-
 					if let firstHeard = node.firstHeard, firstHeard.timeIntervalSince1970 > 0 && firstHeard < Calendar.current.date(byAdding: .year, value: 1, to: Date())! {
 						HStack {
 							Label {
@@ -232,7 +220,6 @@ struct NodeDetail: View {
 							dateFormatRelative.toggle()
 						}
 					}
-
 					if let lastHeard = node.lastHeard, lastHeard.timeIntervalSince1970 > 0 && lastHeard < Calendar.current.date(byAdding: .year, value: 1, to: Date())! {
 						HStack {
 							Label {
@@ -242,7 +229,6 @@ struct NodeDetail: View {
 									.symbolRenderingMode(.multicolor)
 							}
 							Spacer()
-
 							if dateFormatRelative, let text = Self.relativeFormatter.string(for: lastHeard) {
 								if lastHeard.formatted() != "Unknown Age".localized {
 									Text(text)
@@ -259,7 +245,6 @@ struct NodeDetail: View {
 						}
 					}
 				}
-
 				// Note, as you add widgets, you should add to the `hasDataForLatestPositions` array
 				// This will make sure the "Environment" section is only displayed when the node has a position
 				// to use with WeatherKit, or has actual data in the most recent EnvironmentMetrics entity
@@ -298,7 +283,7 @@ struct NodeDetail: View {
 											let windGust = node.latestEnvironmentMetrics?.windGust.map { Measurement(value: Double($0), unit: UnitSpeed.metersPerSecond) }
 											let direction = cardinalValue(from: Double(node.latestEnvironmentMetrics?.windDirection ?? 0))
 											WindCompactWidget(speed: windSpeedMeasurement.formatted(.measurement(width: .abbreviated, numberFormatStyle: .number.precision(.fractionLength(0)))),
-															gust: node.latestEnvironmentMetrics?.windGust ?? 0.0 > 0.0 ? windGust?.formatted(.measurement(width: .abbreviated, numberFormatStyle: .number.precision(.fractionLength(0)))) : "", direction: direction)
+															  gust: node.latestEnvironmentMetrics?.windGust ?? 0.0 > 0.0 ? windGust?.formatted(.measurement(width: .abbreviated, numberFormatStyle: .number.precision(.fractionLength(0)))) : "", direction: direction)
 										}
 										if let rainfall1h = node.latestEnvironmentMetrics?.rainfall1H {
 											let locale = NSLocale.current as NSLocale
@@ -370,7 +355,6 @@ struct NodeDetail: View {
 						}
 					}
 					.disabled(!node.hasDeviceMetrics)
-
 					NavigationLink {
 						NodeMapSwiftUI(node: node, showUserLocation: connectedNode?.num ?? 0 == node.num)
 					} label: {
@@ -382,7 +366,6 @@ struct NodeDetail: View {
 						}
 					}
 					.disabled(!node.hasPositions)
-
 					NavigationLink {
 						PositionLog(node: node)
 					} label: {
@@ -394,7 +377,6 @@ struct NodeDetail: View {
 						}
 					}
 					.disabled(!node.hasPositions)
-
 					NavigationLink {
 						EnvironmentMetricsLog(node: node)
 					} label: {
@@ -406,7 +388,6 @@ struct NodeDetail: View {
 						}
 					}
 					.disabled(!node.hasEnvironmentMetrics)
-
 					NavigationLink {
 						TraceRouteLog(node: node)
 					} label: {
@@ -418,7 +399,6 @@ struct NodeDetail: View {
 						}
 					}
 					.disabled(node.traceRoutes?.count ?? 0 == 0)
-
 					NavigationLink {
 						PowerMetricsLog(node: node)
 					} label: {
@@ -430,7 +410,6 @@ struct NodeDetail: View {
 						}
 					}
 					.disabled(!node.hasPowerMetrics)
-
 					NavigationLink {
 						DetectionSensorLog(node: node)
 					} label: {
@@ -442,7 +421,6 @@ struct NodeDetail: View {
 						}
 					}
 					.disabled(!node.hasDetectionSensorMetrics)
-
 					if node.hasPax {
 						NavigationLink {
 							PaxCounterLog(node: node)
@@ -457,7 +435,6 @@ struct NodeDetail: View {
 						.disabled(!node.hasPax)
 					}
 				}
-
 				Section("Actions") {
 					if let user = node.user {
 						NodeAlertsButton(
@@ -466,7 +443,6 @@ struct NodeDetail: View {
 							user: user
 						)
 					}
-
 					if let connectedNode {
 						FavoriteNodeButton(
 							node: node
@@ -486,7 +462,7 @@ struct NodeDetail: View {
 							}
 							if node.hasPositions {
 								NavigateToButton(node: node)
-								}
+							}
 							IgnoreNodeButton(
 								node: node
 							)
@@ -497,7 +473,6 @@ struct NodeDetail: View {
 						}
 					}
 				}
-
 				if let metadata = node.metadata,
 				   let connectedNode,
 				   accessoryManager.isConnected {
@@ -524,7 +499,6 @@ struct NodeDetail: View {
 								}
 							}
 						}
-
 						if metadata.canShutdown {
 							Button {
 								showingShutdownConfirm = true
@@ -548,7 +522,6 @@ struct NodeDetail: View {
 								}
 							}
 						}
-
 						Button {
 							showingRebootConfirm = true
 						} label: {

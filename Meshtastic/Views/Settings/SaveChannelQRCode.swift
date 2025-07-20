@@ -12,7 +12,6 @@ import MeshtasticProtobufs
 struct SaveChannelQRCode: View {
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.managedObjectContext) var context
-
 	let channelSetLink: String
 	var addChannels: Bool = false
 	var accessoryManager: AccessoryManager
@@ -22,7 +21,6 @@ struct SaveChannelQRCode: View {
 	@State private var connectedToDevice: Bool = false
 	@State private var loraChanges: [String] = []
 	@State private var okToMQTT: Bool = false
-
 	var body: some View {
 		VStack {
 			Text("\(addChannels ? "Add" : "Replace all") Channels?")
@@ -46,7 +44,6 @@ struct SaveChannelQRCode: View {
 				}
 				.padding()
 			}
-
 			if showError {
 				Text(errorMessage.isEmpty ? "Channels being added from the QR code did not save. When adding channels the names must be unique." : errorMessage)
 					.fixedSize(horizontal: false, vertical: true)
@@ -54,7 +51,6 @@ struct SaveChannelQRCode: View {
 					.font(.callout)
 					.padding()
 			}
-
 			HStack {
 				if !showError {
 					Button {
@@ -124,10 +120,8 @@ struct SaveChannelQRCode: View {
 			fetchLoRaConfigChanges()
 		}
 	}
-
 	private func extractChannelDataFromURL(_ urlString: String) -> String? {
 		Logger.data.info("Extracting channel data from URL: \(urlString)")
-
 		if let url = URL(string: urlString) {
 			// Get the fragment (part after #)
 			if let fragment = url.fragment, !fragment.isEmpty {
@@ -135,7 +129,6 @@ struct SaveChannelQRCode: View {
 				return fragment
 			}
 		}
-
 		// Fallback: manually extract everything after the last #
 		if let hashIndex = urlString.lastIndex(of: "#") {
 			let startIndex = urlString.index(after: hashIndex)
@@ -145,11 +138,9 @@ struct SaveChannelQRCode: View {
 				return channelData
 			}
 		}
-
 		Logger.data.error("Failed to extract channel data from URL: \(urlString)")
 		return nil
 	}
-
 	private func fetchLoRaConfigChanges() {
 		var currentLoRaConfig: Config.LoRaConfig?
 
@@ -167,9 +158,7 @@ struct SaveChannelQRCode: View {
 			// Assume it's already the base64 data
 			channelData = channelSetLink
 		}
-
 		Logger.data.info("Processing channel data: \(channelData)")
-
 		// Fetch current LoRa config from Core Data
 		let fetchRequest = NodeInfoEntity.fetchRequest()
 		fetchRequest.predicate = NSPredicate(format: "num == %lld", Int64(accessoryManager.activeDeviceNum ?? 0))
@@ -182,7 +171,6 @@ struct SaveChannelQRCode: View {
 		} catch {
 			Logger.data.error("Failed to fetch NodeInfoEntity: \(error.localizedDescription, privacy: .public)")
 		}
-
 		// Decode base64url string
 		let decodedString = channelData.base64urlToBase64()
 		guard let decodedData = Data(base64Encoded: decodedString) else {
@@ -191,7 +179,6 @@ struct SaveChannelQRCode: View {
 			showError = true
 			return
 		}
-
 		do {
 			let channelSet = try ChannelSet(serializedBytes: decodedData)
 			let newLoRaConfig = channelSet.loraConfig
@@ -248,7 +235,6 @@ struct SaveChannelQRCode: View {
 			} else {
 				// Compare against default values when no current config exists
 				let defaultConfig = getDefaultLoRaConfig()
-
 				if newLoRaConfig.hopLimit != defaultConfig.hopLimit {
 					changes.append("Hop Limit: \(defaultConfig.hopLimit) -> \(newLoRaConfig.hopLimit)")
 				}
@@ -291,16 +277,13 @@ struct SaveChannelQRCode: View {
 					changes.append("Ignore MQTT: \(defaultConfig.ignoreMqtt) -> \(newLoRaConfig.ignoreMqtt)")
 				}
 			}
-
 			loraChanges = changes
-
 		} catch {
 			Logger.data.error("Failed to decode ChannelSet: \(error.localizedDescription, privacy: .public)")
 			errorMessage = "Failed to decode channel configuration"
 			showError = true
 		}
 	}
-
 	private func getDefaultLoRaConfig() -> Config.LoRaConfig {
 		var config = Config.LoRaConfig()
 		config.hopLimit = 3
@@ -320,7 +303,6 @@ struct SaveChannelQRCode: View {
 		return config
 	}
 }
-
 extension LoRaConfigEntity {
 	func toProto() -> Config.LoRaConfig {
 		var config = Config.LoRaConfig()

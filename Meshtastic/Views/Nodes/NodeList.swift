@@ -338,6 +338,11 @@ struct NodeList: View {
 				await searchNodeList()
 			}
 		}
+		.onChange(of: selectedNode) {
+			if selectedNode == nil {
+				router.navigationState.nodeListSelectedNodeNum = nil
+			}
+		}
 		.onChange(of: router.navigationState) {
 			if let selected = router.navigationState.nodeListSelectedNodeNum {
 				// Force a complete view rebuild by generating a new UUID
