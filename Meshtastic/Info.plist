@@ -141,5 +141,9 @@
 	</array>
 	<key>com.apple.developer.carplay-communication</key>
 	<true/>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_meshtastic._tcp</string>
+	</array>
 </dict>
 </plist>

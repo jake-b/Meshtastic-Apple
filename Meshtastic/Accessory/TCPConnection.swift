@@ -55,7 +55,7 @@ class TCPConnection: Connection {
 					buffer.append(data)
 
 					while buffer.count >= 4 {
-						guard buffer[0] == 0x94 && buffer[1] == 0x73 else {
+						guard buffer[0] == 0x94 && buffer[1] == 0xc3 else {
 							Logger.services.error("Bad magic in TCP frame")
 							throw AccessoryError.ioFailed("Bad magic in TCP frame")
 						}
