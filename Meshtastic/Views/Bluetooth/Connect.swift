@@ -219,21 +219,41 @@ struct Connect: View {
 												.imageScale(.large).foregroundColor(.gray)
 												.padding(.trailing)
 										}
-										Button(action: {
-											if UserDefaults.preferredPeripheralId.count > 0 && device.id.uuidString != UserDefaults.preferredPeripheralId {
-												if let connectedDevice = accessoryManager.activeConnection?.device, accessoryManager.isConnected {
-													Task { try await accessoryManager.disconnect() }
+										VStack(alignment: .leading) {
+											Button(action: {
+												if UserDefaults.preferredPeripheralId.count > 0 && device.id.uuidString != UserDefaults.preferredPeripheralId {
+													if let connectedDevice = accessoryManager.activeConnection?.device, accessoryManager.isConnected {
+														Task { try await accessoryManager.disconnect() }
+													}
+													presentingSwitchPreferredPeripheral = true
+													selectedPeripherialId = device.id.uuidString
+												} else {
+													Task {
+														try? await accessoryManager.connect(to: device)
+													}
+													// self.bleManager.connectTo(peripheral: peripheral.peripheral)
 												}
-												presentingSwitchPreferredPeripheral = true
-												selectedPeripherialId = device.id.uuidString
-											} else {
-												Task {
-													try? await accessoryManager.connect(to: device)
-												}
-												// self.bleManager.connectTo(peripheral: peripheral.peripheral)
+											}) {
+												Text(device.name).font(.callout)
 											}
-										}) {
-											Text(device.name).font(.callout)
+											// Show transport type
+											switch device.transportType {
+											case .ble:
+												HStack {
+													Image(systemName: "wave.3.forward.circle")
+													Text("BLE")
+												}
+											case .serial:
+												HStack {
+													Image(systemName: "cable.connector.horizontal")
+													Text("Serial")
+												}
+											case .tcp:
+												HStack {
+													Image(systemName: "network")
+													Text("TCP")
+												}
+											}
 										}
 										Spacer()
 										VStack {
