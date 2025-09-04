@@ -18,37 +18,16 @@ struct NodeList: View {
 	
 	@State private var columnVisibility = NavigationSplitViewVisibility.all
 	@State private var selectedNode: NodeInfoEntity?
-	@State private var searchText = ""
-	@State private var viaLora = true
-	@State private var viaMqtt = true
-	@State private var isOnline = false
-	@State private var isPkiEncrypted = false
-	@State private var isFavorite = false
-	@State private var isIgnored = false
-	@State private var isEnvironment = false
 	// Force refresh ID to make SwiftUI rebuild the view hierarchy
 	@State private var forceRefreshID = UUID()
-	@State private var distanceFilter = false
-	@State private var maxDistance: Double = 800000
-	@State private var hopsAway: Double = -1.0
-	@State private var roleFilter = false
-	@State private var deviceRoles: Set<Int> = []
 	@State private var isPresentingTraceRouteSentAlert = false
 	@State private var isPresentingPositionSentAlert = false
 	@State private var isPresentingPositionFailedAlert = false
 	@State private var isPresentingDeleteNodeAlert = false
 	@State private var deleteNodeId: Int64 = 0
 	@State private var shareContactNode: NodeInfoEntity?
-	
-	var boolFilters: [Bool] {[
-		isFavorite,
-		isIgnored,
-		isOnline,
-		isPkiEncrypted,
-		isEnvironment,
-		distanceFilter,
-		roleFilter
-	]}
+
+	@StateObject private var filters = NodeFilter()
 	
 	@State var isEditingFilters = false
 	
@@ -157,18 +136,18 @@ struct NodeList: View {
 			}
 			.sheet(isPresented: $isEditingFilters) {
 				NodeListFilter(
-					viaLora: $viaLora,
-					viaMqtt: $viaMqtt,
-					isOnline: $isOnline,
-					isPkiEncrypted: $isPkiEncrypted,
-					isFavorite: $isFavorite,
-					isIgnored: $isIgnored,
-					isEnvironment: $isEnvironment,
-					distanceFilter: $distanceFilter,
-					maximumDistance: $maxDistance,
-					hopsAway: $hopsAway,
-					roleFilter: $roleFilter,
-					deviceRoles: $deviceRoles
+					viaLora: $filters.viaLora,
+					viaMqtt: $filters.viaMqtt,
+					isOnline: $filters.isOnline,
+					isPkiEncrypted: $filters.isPkiEncrypted,
+					isFavorite: $filters.isFavorite,
+					isIgnored: $filters.isIgnored,
+					isEnvironment: $filters.isEnvironment,
+					distanceFilter: $filters.distanceFilter,
+					maximumDistance: $filters.maxDistance,
+					hopsAway: $filters.hopsAway,
+					roleFilter: $filters.roleFilter,
+					deviceRoles: $filters.deviceRoles
 				)
 			}
 			.safeAreaInset(edge: .bottom, alignment: .trailing) {
@@ -188,7 +167,7 @@ struct NodeList: View {
 				.controlSize(.regular)
 				.padding(5)
 			}
-			.searchable(text: $searchText, placement: .automatic, prompt: "Find a node")
+			.searchable(text: $filters.searchText, placement: .automatic, prompt: "Find a node")
 			.disableAutocorrection(true)
 			.scrollDismissesKeyboard(.immediately)
 			.navigationTitle(String.localizedStringWithFormat("Nodes (%@)".localized, String(nodes.count)))
@@ -279,51 +258,8 @@ struct NodeList: View {
 			ContentUnavailableView("", systemImage: "line.3.horizontal")
 		}
 		.navigationSplitViewStyle(.balanced)
-		.onChange(of: searchText) {
-			Task {
-				await searchNodeList()
-			}
-		}
-		.onChange(of: viaLora) {
-			if !viaLora && !viaMqtt {
-				viaMqtt = true
-			}
-			Task {
-				await searchNodeList()
-			}
-		}
-		.onChange(of: viaMqtt) {
-			if !viaLora && !viaMqtt {
-				viaLora = true
-			}
-			Task {
-				await searchNodeList()
-			}
-		}
-		.onChange(of: [boolFilters]) {
-			Task {
-				await searchNodeList()
-			}
-		}
-		.onChange(of: [deviceRoles]) {
-			Task {
-				await searchNodeList()
-			}
-		}
-		.onChange(of: hopsAway) {
-			Task {
-				await searchNodeList()
-			}
-		}
-		.onChange(of: maxDistance) {
-			Task {
-				await searchNodeList()
-			}
-		}
-		.onChange(of: distanceFilter) {
-			Task {
-				await searchNodeList()
-			}
+		.onReceive(filters.objectWillChange) {
+			searchNodeList()
 		}
 		.onChange(of: selectedNode) {
 			if selectedNode != nil {
@@ -371,16 +307,32 @@ struct NodeList: View {
 		}
 	}
 	
-	private func searchNodeList() async {
-		/// Case Insensitive Search Text Predicates
-		let searchPredicates = ["user.userId", "user.numString", "user.hwModel", "user.hwDisplayName", "user.longName", "user.shortName"].map { property in
-			return NSPredicate(format: "%K CONTAINS[c] %@", property, searchText)
-		}
-		/// Create a compound predicate using each text search preicate as an OR
-		let textSearchPredicate = NSCompoundPredicate(type: .or, subpredicates: searchPredicates)
-		/// Create an array of predicates to hold our AND predicates
+	private func searchNodeList() {
+		nodes.nsPredicate = filters.buildPredicate()
+	}
+}
+
+
+extension NodeFilter {
+	func buildPredicate() -> NSPredicate? {
 		var predicates: [NSPredicate] = []
-		/// Mqtt
+		
+		// (same predicate logic you have, but organized in functions)
+		if !searchText.isEmpty {
+			let searchKeys = [
+				"user.userId", "user.numString", "user.hwModel",
+				"user.hwDisplayName", "user.longName", "user.shortName"
+			]
+			let textPredicates = searchKeys.map {
+				NSPredicate(format: "%K CONTAINS[c] %@", $0, searchText)
+			}
+			predicates.append(NSCompoundPredicate(orPredicateWithSubpredicates: textPredicates))
+		}
+		
+		if isFavorite {
+			predicates.append(NSPredicate(format: "favorite == YES"))
+		}
+		
 		if !(viaLora && viaMqtt) {
 			if viaLora {
 				let loraPredicate = NSPredicate(format: "viaMqtt == NO")
@@ -390,6 +342,7 @@ struct NodeList: View {
 				predicates.append(mqttPredicate)
 			}
 		}
+		
 		/// Role
 		if roleFilter && deviceRoles.count > 0 {
 			var rolesArray: [NSPredicate] = []
@@ -454,15 +407,7 @@ struct NodeList: View {
 				predicates.append(distancePredicate)
 			}
 		}
-		if predicates.count > 0 || !searchText.isEmpty {
-			if !searchText.isEmpty {
-				let filterPredicates = NSCompoundPredicate(type: .and, subpredicates: predicates)
-				nodes.nsPredicate = NSCompoundPredicate(type: .and, subpredicates: [textSearchPredicate, filterPredicates])
-			} else {
-				nodes.nsPredicate = NSCompoundPredicate(type: .and, subpredicates: predicates)
-			}
-		} else {
-			nodes.nsPredicate = nil
-		}
+		
+		return predicates.isEmpty ? nil : NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
 	}
 }
