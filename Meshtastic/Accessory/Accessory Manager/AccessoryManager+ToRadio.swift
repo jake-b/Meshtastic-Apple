@@ -825,7 +825,7 @@ extension AccessoryManager {
 			throw AccessoryError.ioFailed("removeNode: Unable to serialize admin packet")
 		}
 
-		let messageDescription = "🛎️ [Device Metadata] Requested for node \(toUser?.longName ?? "#\(toUserNum)") by \(fromUser?.longName ?? "#\(fromUser)")"
+		let messageDescription = "🛎️ [Device Metadata] Requested for node \(toUser?.longName ?? "#\(toUserNum)") by \(fromUser?.longName ?? "#\(fromUserNum)")"
 		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
 		return Int64(meshPacket.id)
 	}

@@ -8,6 +8,11 @@
 import Foundation
 import OSLog
 
+enum ApiError: Error, LocalizedError {
+	case jsonNotFound(String)
+	case invalidUrl
+}
+
 /// Device Hardware API
 struct DeviceHardware: Codable {
 	let hwModel: Int
@@ -54,15 +59,15 @@ struct FirmwareRelease: Codable {
 }
 
 class Api: ObservableObject {
-
+	
 	func loadDeviceHardwareData(completion: @escaping ([DeviceHardware]) -> Void) {
-
+		
 		/// List from https://api.meshtastic.org/resource/deviceHardware
 		guard let url = Bundle.main.url(forResource: "DeviceHardware.json", withExtension: nil) else {
 			Logger.services.critical("Couldn't find DeviceHardware.json in main bundle.")
 			return
 		}
-
+		
 		URLSession.shared.dataTask(with: url) { data, _, _ in
 			if let data = data {
 				do {
@@ -80,7 +85,7 @@ class Api: ObservableObject {
 			}
 		}.resume()
 	}
-
+	
 	func loadFirmwareReleaseData(completion: @escaping (FirmwareReleases) -> Void) {
 		guard let url = URL(string: "https://api.meshtastic.org/github/firmware/list") else {
 			Logger.services.error("Invalid url...")
@@ -99,5 +104,54 @@ class Api: ObservableObject {
 				return
 			}
 		}.resume()
+	}
+	
+	func loadDeviceHardwareData() async throws -> [DeviceHardware] {
+		return try await withCheckedThrowingContinuation { cont in
+			/// List from https://api.meshtastic.org/resource/deviceHardware
+			guard let url = Bundle.main.url(forResource: "DeviceHardware.json", withExtension: nil) else {
+				Logger.services.critical("Couldn't find DeviceHardware.json in main bundle.")
+				cont.resume(throwing: ApiError.jsonNotFound("Couldn't find DeviceHardware.json in main bundle."))
+				return
+			}
+			
+			URLSession.shared.dataTask(with: url) { data, _, _ in
+				if let data = data {
+					do {
+						let deviceHardware = try JSONDecoder().decode([DeviceHardware].self, from: data)
+						cont.resume(returning: deviceHardware)
+					} catch {
+						Logger.services.error("JSON decode failure: \(error.localizedDescription, privacy: .public)")
+						if let decodingError = error as? DecodingError {
+							Logger.services.error("Decoding error details: \(decodingError)")
+						}
+						cont.resume(throwing: error)
+					}
+					return
+				}
+			}.resume()
+		}
+	}
+
+	func loadFirmwareReleaseData() async throws -> FirmwareReleases {
+		return try await withCheckedThrowingContinuation { cont in
+			
+			guard let url = URL(string: "https://api.meshtastic.org/github/firmware/list") else {
+				Logger.services.error("Invalid url...")
+				cont.resume(throwing: ApiError.invalidUrl)
+				return
+			}
+			URLSession.shared.dataTask(with: url) { data, _, _ in
+				if let data = data {
+					do {
+						let firmwareReleases = try JSONDecoder().decode(FirmwareReleases.self, from: data)
+						cont.resume(returning: firmwareReleases)
+					} catch {
+						Logger.services.error("JSON decode failure: \(error.localizedDescription, privacy: .public)")
+					}
+					return
+				}
+			}.resume()
+		}
 	}
 }

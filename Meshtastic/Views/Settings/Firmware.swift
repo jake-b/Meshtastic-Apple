@@ -8,17 +8,23 @@
 import SwiftUI
 import StoreKit
 import OSLog
+import NordicDFU
 
 struct Firmware: View {
 	@Environment(\.managedObjectContext) var context
 	@EnvironmentObject var accessoryManager: AccessoryManager
 	var node: NodeInfoEntity?
-	@State var minimumVersion = "2.5.4"
+	@State var minimumVersion = "2.6.11"
 	@State var version = ""
 	@State private var currentDevice: DeviceHardware?
 	@State private var latestStable: FirmwareRelease?
 	@State private var latestAlpha: FirmwareRelease?
-
+	@State private var latestStableURL: URL?
+	@State private var latestAlphaURL: URL?
+	@EnvironmentObject var meshtasticAPI: MeshtasticAPI
+	
+	@StateObject private var dfuViewModel = DFUViewModel()
+	
 	var body: some View {
 		let supportedVersion = accessoryManager.checkIsVersionSupported(forVersion: minimumVersion)
 		let connectedVersion = accessoryManager.activeConnection?.device.firmwareVersion ?? "Unknown"
@@ -39,14 +45,12 @@ struct Firmware: View {
 						.font(.largeTitle)
 						.fixedSize(horizontal: false, vertical: true)
 				}
-				VStack {
-					Image(deviceString ?? "UNSET")
-						.resizable()
-						.aspectRatio(contentMode: .fit)
+				VStack(alignment: .center) {
+					DeviceHardwareImage(hwId: node?.user?.hwModelId ?? 0)
 						.frame(width: 300, height: 300)
 						.cornerRadius(5)
-				}
-
+				}.frame(maxWidth: .infinity) // Make sure the center is honored by filling the width
+				Text("PlatformIO Environment: \(node?.myInfo?.pioEnv, default: "Unknown")")
 				if supportedVersion {
 					Text("Your Firmware is up to date")
 						.fixedSize(horizontal: false, vertical: true)
@@ -123,20 +127,51 @@ struct Firmware: View {
 						}
 						Spacer()
 						/// RAK 4631
-						if currentDevice?.hwModel == 9 {
-							Text("You can also update your Meshtastic device over bluetooth using the Nordic DFU app.")
-								.fixedSize(horizontal: false, vertical: true)
-								.foregroundStyle(.gray)
-								.font(.caption)
-							Link("Get NRF DFU from the App Store", destination: URL(string: "https://apps.apple.com/us/app/nrf-device-firmware-update/id1624454660")!)
-								.font(.callout)
-								.padding(.bottom)
-						} else {
+//						if currentDevice?.hwModel == 9 {
+//							Text("You can also update your Meshtastic device over bluetooth using the Nordic DFU app.")
+//								.fixedSize(horizontal: false, vertical: true)
+//								.foregroundStyle(.gray)
+//								.font(.caption)
+//							Link("Get NRF DFU from the App Store", destination: URL(string: "https://apps.apple.com/us/app/nrf-device-firmware-update/id1624454660")!)
+//								.font(.callout)
+//								.padding(.bottom)
+//						} else {
+							if dfuViewModel.state == DFUUpdateState.idle {
+								if let latestStableURL {
+									Button {
+										if let ble = self.accessoryManager.activeConnection?.connection as? BLEConnection {
+											Task {
+												let peripheral = await ble.peripheral
+												
+												dfuViewModel.startProcess(peripheral: peripheral, remoteURLString: latestStableURL.absoluteString)
+											}
+										}
+									} label: {
+										Text("Update to Latest \(latestStableURL.absoluteURL)")
+									}
+								}
+							} else {
+								Text("\(dfuViewModel.statusMessage) \(dfuViewModel.progress)")
+							}
+							/* if let latestAlphaURL {
+								Button {
+									if let ble = self.accessoryManager.activeConnection?.connection as? BLEConnection {
+										Task {
+											let peripheral = await ble.peripheral
+											
+											dfuViewModel.startProcess(peripheral: peripheral, remoteURLString: latestAlphaURL.absoluteString)
+										}
+									}
+								} label: {
+									Text("Update to Latest \(latestAlphaURL.absoluteURL)")
+								}
+							}*/
+
 							Text("OTA Updates are not supported on this NRF Device.")
 								.font(.title3)
 							Link("Drag & Drop Firmware Update", destination: URL(string: "https://meshtastic.org/docs/getting-started/flashing-firmware/nrf52/drag-n-drop")!)
 								.font(.callout)
-						}
+//						}
 					}
 				} else if currentDevice?.architecture == Meshtastic.Architecture.esp32 || currentDevice?.architecture == Meshtastic.Architecture.esp32S3 || currentDevice?.architecture == Meshtastic.Architecture.esp32C3 {
 					VStack(alignment: .leading) {
@@ -184,25 +219,79 @@ struct Firmware: View {
 			.padding()
 			.padding(.bottom, 5)
 			.onFirstAppear {
-				Api().loadDeviceHardwareData { (hw) in
-					for device in hw {
-						let currentHardware = node?.user?.hwModel ?? "UNSET"
-						let deviceString = device.hwModelSlug.replacingOccurrences(of: "_", with: "")
-						if deviceString == currentHardware {
+				Task {
+					do {
+						// Load the list of hardware from the API
+						let hw = try await Api().loadDeviceHardwareData()
+						
+						guard let currentHardware = node?.user?.hwModel, let device = hw.first(where: { d in
+							d.hwModelSlug.replacingOccurrences(of: "_", with: "") == currentHardware
+						}) else {
+							Logger.services.error("Unable to find current hardware device")
+							return
+						}
+						Task { @MainActor in
 							currentDevice = device
 						}
+						
+						let fw = try await Api().loadFirmwareReleaseData()
+						latestStable = fw.releases.stable.first
+						let archString = currentDevice?.architecture.rawValue ?? ""
+						// let ls = fw.releases.stable.first(where: { $0.zipURL.contains(archString) == true })
+						
+						let	latestStable = fw.releases.stable.first
+						let latestAlpha = fw.releases.alpha.first
+						
+						if let latestStable {
+							let version = latestStable.id.trimmingPrefix("v")
+							let fileName: String
+							if device.architecture == .nrf52840 {
+								fileName = "https://raw.githubusercontent.com/meshtastic/meshtastic.github.io/master/firmware-\(version)/firmware-\(device.platformioTarget)-\(version)-ota.zip"
+							} else {
+								fileName = "https://raw.githubusercontent.com/meshtastic/meshtastic.github.io/master/firmware-\(version)/firmware-\(device.platformioTarget)-\(version).uf2"
+							}
+							Logger.services.info("Loaded Firmware Data: \(fileName)")
+							Task {
+								if let url = URL(string: fileName), await url.isValidDownload() {
+									Task { @MainActor in
+										latestStableURL = url
+									}
+								}
+							}
+							Task { @MainActor in self.latestStable = latestStable } // Set UI
+						}
+						
+						if let latestAlpha {
+							let version = latestAlpha.id.trimmingPrefix("v")
+							let fileName: String
+							if device.architecture == .nrf52840 {
+								fileName = "https://raw.githubusercontent.com/meshtastic/meshtastic.github.io/master/firmware-\(version)/firmware-\(device.platformioTarget)-\(version)-ota.zip"
+							} else {
+								fileName = "https://raw.githubusercontent.com/meshtastic/meshtastic.github.io/master/firmware-\(version)/firmware-\(device.platformioTarget)-\(version).uf2"
+							}
+							Task {
+								if let url = URL(string: fileName), await url.isValidDownload() {
+									Task { @MainActor in
+										latestAlphaURL = url
+									}
+								}
+							}
+							Task { @MainActor in self.latestAlpha = latestAlpha } // Set UI
+							Logger.services.info("Loaded Firmware Data: \(fileName)")
+						}
+						
+					} catch {
+						Logger.services.error("Unable to retreive firmware info: \(error)")
 					}
-				}
-				Api().loadFirmwareReleaseData { (fw) in
-					latestStable = fw.releases.stable.first
-					let archString = currentDevice?.architecture.rawValue ?? ""
-					let ls = fw.releases.stable.first(where: { $0.zipURL.contains(archString) == true })
-					latestStable = fw.releases.stable.first
-					latestAlpha = fw.releases.alpha.first
 				}
 			}
 			.navigationTitle("Firmware Updates")
 			.navigationBarTitleDisplayMode(.inline)
 		}
 	}
+	
+	func setStableURL(_ url: URL) async {
+		
+	}
 }
+

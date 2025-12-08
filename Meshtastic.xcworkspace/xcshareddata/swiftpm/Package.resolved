@@ -1,5 +1,5 @@
 {
-  "originHash" : "fd71b247ba909b0eb360db5530e1068363839c5e169dea6f6a9974b2d98276f4",
+  "originHash" : "8510cfefb9a5abe935fd8359720e7d397afe5e8fbfde5c08889bb9b7699f2397",
   "pins" : [
     {
       "identity" : "cocoamqtt",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "a193cab2786b704ebc98c290a7cc8a3165f636bb",
         "version" : "3.1.0"
+      }
+    },
+    {
+      "identity" : "ios-dfu-library",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/NordicSemiconductor/IOS-DFU-Library",
+      "state" : {
+        "revision" : "4773d7eed944684dfdd177a4a91af8a89ebbaac8",
+        "version" : "4.16.0"
       }
     },
     {
@@ -62,6 +71,15 @@
       "state" : {
         "revision" : "d72aed98f8253ec1aa9ea1141e28150f408cf17f",
         "version" : "1.29.0"
+      }
+    },
+    {
+      "identity" : "zipfoundation",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/weichsel/ZIPFoundation",
+      "state" : {
+        "revision" : "02b6abe5f6eef7e3cbd5f247c5cc24e246efcfe0",
+        "version" : "0.9.19"
       }
     }
   ],

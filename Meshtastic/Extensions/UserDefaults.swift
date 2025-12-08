@@ -80,6 +80,7 @@ extension UserDefaults {
 		case usageDataAndCrashReporting
 		case autoconnectOnDiscovery
 		case testIntEnum
+		case lastDeviceAPIUpdate
 	}
 
 	func reset() {
@@ -178,6 +179,9 @@ extension UserDefaults {
 
 	@UserDefault(.testIntEnum, defaultValue: .one)
 	static var testIntEnum: TestIntEnum
+	
+	@UserDefault(.lastDeviceAPIUpdate, defaultValue: .distantPast)
+	static var lastDeviceAPIUpdate: Date
 }
 
 enum TestIntEnum: Int, Decodable {

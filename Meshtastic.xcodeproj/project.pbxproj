@@ -17,6 +17,9 @@
 		10D109F42E2047D600536CE6 /* DatadogTrace in Frameworks */ = {isa = PBXBuildFile; productRef = 10D109F32E2047D600536CE6 /* DatadogTrace */; };
 		230BC3972E31071E0046BF2A /* AccessoryManager+Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 230BC3962E31071E0046BF2A /* AccessoryManager+Discovery.swift */; };
 		231251382E3BC96400E6ED07 /* BLEAuthorizationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231251372E3BC96400E6ED07 /* BLEAuthorizationHelper.swift */; };
+		23148E302EE1CCE500F0DB2C /* MeshtasticAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23148E2F2EE1CCE500F0DB2C /* MeshtasticAPI.swift */; };
+		23148EB22EE247B700F0DB2C /* SVGKit in Frameworks */ = {isa = PBXBuildFile; productRef = 23148EB12EE247B700F0DB2C /* SVGKit */; };
+		23148EB42EE247B700F0DB2C /* SVGKitSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 23148EB32EE247B700F0DB2C /* SVGKitSwift */; };
 		231A53782E69ADB900216B99 /* NodeFilterParameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231A53772E69ADB900216B99 /* NodeFilterParameters.swift */; };
 		231B3F212D087A4C0069A07D /* MetricTableColumn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231B3F202D087A4C0069A07D /* MetricTableColumn.swift */; };
 		231B3F222D087A4C0069A07D /* MetricsColumnList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231B3F1F2D087A4C0069A07D /* MetricsColumnList.swift */; };
@@ -42,6 +45,7 @@
 		2344A2B12D68DFF800170A77 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C49D8F2C471AEA0024FBD1 /* Constants.swift */; };
 		2346A7192E2FB9A300CB9239 /* SerialConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2346A7182E2FB9A300CB9239 /* SerialConnection.swift */; };
 		2346A71D2E2FB9C500CB9239 /* SerialTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2346A71C2E2FB9C500CB9239 /* SerialTransport.swift */; };
+		236CA24F2EE30B1000A47F96 /* images in CopyFiles */ = {isa = PBXBuildFile; fileRef = 236CA24E2EE30B1000A47F96 /* images */; };
 		2373AE132D0A216C0086C749 /* MetricsChartSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE122D0A216C0086C749 /* MetricsChartSeries.swift */; };
 		2373AE152D0A24930086C749 /* MetricsSeriesList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE142D0A24930086C749 /* MetricsSeriesList.swift */; };
 		2373AE172D0A26620086C749 /* EnvironmentDefaultSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2373AE162D0A26620086C749 /* EnvironmentDefaultSeries.swift */; };
@@ -52,7 +56,10 @@
 		237AEB972E1FE627003B7CE3 /* BLETransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237AEB962E1FE627003B7CE3 /* BLETransport.swift */; };
 		237AEB992E20098B003B7CE3 /* BLEConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237AEB982E20098B003B7CE3 /* BLEConnection.swift */; };
 		237B46962DC8F1C100B22D99 /* RateLimitedButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237B46952DC8F1C100B22D99 /* RateLimitedButton.swift */; };
+		2388EC382EDF88E900F6F982 /* NordicDFU in Frameworks */ = {isa = PBXBuildFile; productRef = 2388EC372EDF88E900F6F982 /* NordicDFU */; };
+		2388EC3A2EDF8A1400F6F982 /* DFUModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2388EC392EDF8A1400F6F982 /* DFUModel.swift */; };
 		23A1AFB72E42BD2500E46C96 /* RXTXIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A1AFB62E42BD2500E46C96 /* RXTXIndicatorView.swift */; };
+		23AB0E662EE35E0200AFA09D /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AB0E652EE35E0200AFA09D /* Image.swift */; };
 		23AD54692E2A6EAA0046E9AB /* AccessoryManager+FromRadio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AD54682E2A6EAA0046E9AB /* AccessoryManager+FromRadio.swift */; };
 		23AD546B2E2AA5A80046E9AB /* AccessoryManager+ToRadio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AD546A2E2AA5A80046E9AB /* AccessoryManager+ToRadio.swift */; };
 		23AD546D2E2AE9630046E9AB /* AccessoryManager+MQTT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AD546C2E2AE9630046E9AB /* AccessoryManager+MQTT.swift */; };
@@ -314,6 +321,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		236CA24D2EE3073100A47F96 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				236CA24F2EE30B1000A47F96 /* images in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DDDE5A0829AF163F00490C6C /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -332,6 +349,7 @@
 		108FFECC2DD4005600BFAA81 /* NodeInfoEntityToNodeInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeInfoEntityToNodeInfo.swift; sourceTree = "<group>"; };
 		230BC3962E31071E0046BF2A /* AccessoryManager+Discovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccessoryManager+Discovery.swift"; sourceTree = "<group>"; };
 		231251372E3BC96400E6ED07 /* BLEAuthorizationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEAuthorizationHelper.swift; sourceTree = "<group>"; };
+		23148E2F2EE1CCE500F0DB2C /* MeshtasticAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshtasticAPI.swift; sourceTree = "<group>"; };
 		231A53772E69ADB900216B99 /* NodeFilterParameters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeFilterParameters.swift; sourceTree = "<group>"; };
 		231B3F1F2D087A4C0069A07D /* MetricsColumnList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsColumnList.swift; sourceTree = "<group>"; };
 		231B3F202D087A4C0069A07D /* MetricTableColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricTableColumn.swift; sourceTree = "<group>"; };
@@ -357,6 +375,7 @@
 		2344A2AE2D6697A700170A77 /* TelemetryEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TelemetryEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		2346A7182E2FB9A300CB9239 /* SerialConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerialConnection.swift; sourceTree = "<group>"; };
 		2346A71C2E2FB9C500CB9239 /* SerialTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerialTransport.swift; sourceTree = "<group>"; };
+		236CA24E2EE30B1000A47F96 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = images; path = Meshtastic/Resources/images; sourceTree = "<group>"; };
 		2373AE122D0A216C0086C749 /* MetricsChartSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsChartSeries.swift; sourceTree = "<group>"; };
 		2373AE142D0A24930086C749 /* MetricsSeriesList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsSeriesList.swift; sourceTree = "<group>"; };
 		2373AE162D0A26620086C749 /* EnvironmentDefaultSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentDefaultSeries.swift; sourceTree = "<group>"; };
@@ -367,7 +386,10 @@
 		237AEB962E1FE627003B7CE3 /* BLETransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLETransport.swift; sourceTree = "<group>"; };
 		237AEB982E20098B003B7CE3 /* BLEConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConnection.swift; sourceTree = "<group>"; };
 		237B46952DC8F1C100B22D99 /* RateLimitedButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateLimitedButton.swift; sourceTree = "<group>"; };
+		23825A142EE119F1002515CE /* MeshtasticDataModelV 56.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "MeshtasticDataModelV 56.xcdatamodel"; sourceTree = "<group>"; };
+		2388EC392EDF8A1400F6F982 /* DFUModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DFUModel.swift; sourceTree = "<group>"; };
 		23A1AFB62E42BD2500E46C96 /* RXTXIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RXTXIndicatorView.swift; sourceTree = "<group>"; };
+		23AB0E652EE35E0200AFA09D /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		23AD54682E2A6EAA0046E9AB /* AccessoryManager+FromRadio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccessoryManager+FromRadio.swift"; sourceTree = "<group>"; };
 		23AD546A2E2AA5A80046E9AB /* AccessoryManager+ToRadio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccessoryManager+ToRadio.swift"; sourceTree = "<group>"; };
 		23AD546C2E2AE9630046E9AB /* AccessoryManager+MQTT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccessoryManager+MQTT.swift"; sourceTree = "<group>"; };
@@ -665,7 +687,76 @@
 		DDFFA7462B3A7F3C004730DB /* Bundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bundle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		236CA24C2EE3071A00A47F96 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				crowpanel_2_8.svg,
+				crowpanel_3_5.svg,
+				crowpanel_5_0.svg,
+				crowpanel_7_0.svg,
+				diy.svg,
+				heltec_mesh_pocket.svg,
+				heltec_v4.svg,
+				"heltec-ht62-esp32c3-sx1262.svg",
+				"heltec-mesh-node-t114-case.svg",
+				"heltec-mesh-node-t114.svg",
+				"heltec-mesh-solar.svg",
+				"heltec-v3-case.svg",
+				"heltec-v3.svg",
+				"heltec-vision-master-e213.svg",
+				"heltec-vision-master-e290.svg",
+				"heltec-vision-master-t190.svg",
+				"heltec-wireless-paper.svg",
+				"heltec-wireless-tracker.svg",
+				"heltec-wsl-v3.svg",
+				image_manifest.json,
+				"lilygo-tlora-pager.svg",
+				m5_c6l.svg,
+				meteor_pro.svg,
+				muzi_r1_neo.svg,
+				"nano-g2-ultra.svg",
+				pico.svg,
+				promicro.svg,
+				rak_3312.svg,
+				rak_wismesh_tag.svg,
+				"rak-wismesh-tap-v2.svg",
+				"rak-wismeshtap.svg",
+				rak2560.svg,
+				rak4631_case.svg,
+				rak4631.svg,
+				rak11200.svg,
+				rak11310.svg,
+				rpipicow.svg,
+				seeed_solar.svg,
+				seeed_xiao_nrf52_kit.svg,
+				"seeed-sensecap-indicator.svg",
+				"seeed-xiao-s3.svg",
+				"station-g2.svg",
+				"t-deck.svg",
+				"t-echo.svg",
+				"t-watch-s3.svg",
+				"tbeam-s3-core.svg",
+				tbeam.svg,
+				tdeck_pro.svg,
+				techo_lite.svg,
+				thinknode_m1.svg,
+				thinknode_m2.svg,
+				"tlora-t3s3-epaper.svg",
+				"tlora-t3s3-v1.svg",
+				"tlora-v2-1-1_6.svg",
+				"tlora-v2-1-1_8.svg",
+				"tracker-t1000-e.svg",
+				wio_tracker_l1_case.svg,
+				wio_tracker_l1_eink.svg,
+				"wio-tracker-wm1110.svg",
+			);
+			target = DDC2E15326CE248E0042C5E4 /* Meshtastic */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		236CA20D2EE3036A00A47F96 /* images */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (236CA24C2EE3071A00A47F96 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = images; sourceTree = "<group>"; };
 		DD4C11E02E8099C3003F2F2E /* PreferenceKeys */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PreferenceKeys; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -681,13 +772,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23148EB22EE247B700F0DB2C /* SVGKit in Frameworks */,
 				102B5EAD2E172F41003D191E /* DatadogCrashReporting in Frameworks */,
 				25A978BA2C13F8ED0003AAE7 /* MeshtasticProtobufs in Frameworks */,
 				102B5EAB2E172F41003D191E /* DatadogCore in Frameworks */,
 				10D109F22E2047D600536CE6 /* DatadogSessionReplay in Frameworks */,
+				23148EB42EE247B700F0DB2C /* SVGKitSwift in Frameworks */,
 				102B5EAF2E172F41003D191E /* DatadogLogs in Frameworks */,
 				102B5EB12E172F41003D191E /* DatadogRUM in Frameworks */,
 				DD0D3D222A55CEB10066DB71 /* CocoaMQTT in Frameworks */,
+				2388EC382EDF88E900F6F982 /* NordicDFU in Frameworks */,
 				10D109F42E2047D600536CE6 /* DatadogTrace in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -705,6 +799,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		23148E2E2EE1CCB100F0DB2C /* API */ = {
+			isa = PBXGroup;
+			children = (
+				23148E2F2EE1CCE500F0DB2C /* MeshtasticAPI.swift */,
+			);
+			path = API;
+			sourceTree = "<group>";
+		};
 		231B3F1E2D0879BC0069A07D /* Metrics Visualization */ = {
 			isa = PBXGroup;
 			children = (
@@ -964,6 +1066,7 @@
 				ABB99DEA2E2EA1C500CFBD05 /* AppIconPicker.swift */,
 				DDA0B6B1294CDC55001356EC /* Channels.swift */,
 				DDD6EEAE29BC024700383354 /* Firmware.swift */,
+				2388EC392EDF8A1400F6F982 /* DFUModel.swift */,
 				DD33DB612B3D27C7003E1EA0 /* FirmwareApi.swift */,
 				DD1B8F3F2B35E2F10022AABC /* GPSStatus.swift */,
 				DDAB580C2B0DAA9E00147258 /* Routes.swift */,
@@ -1133,6 +1236,7 @@
 		DDC2E14B26CE248E0042C5E4 = {
 			isa = PBXGroup;
 			children = (
+				236CA24E2EE30B1000A47F96 /* images */,
 				DDD3A2B12D5127B40045EB48 /* ci_scripts */,
 				DDDBC87A2BC62E4E001E8DF7 /* Settings.bundle */,
 				25AECD4E2C2F723200862C8E /* Localizable.xcstrings */,
@@ -1160,6 +1264,7 @@
 			isa = PBXGroup;
 			children = (
 				237AEB8D2E1FE120003B7CE3 /* Accessory */,
+				23148E2E2EE1CCB100F0DB2C /* API */,
 				BCB6137F2C6728E700485544 /* AppIntents */,
 				DD1BD0EC2C603C5B008C0C70 /* Measurement */,
 				25F5D5BC2C3F6D7B008036E3 /* Router */,
@@ -1218,6 +1323,7 @@
 		DDC2E18926CE24F70042C5E4 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				236CA20D2EE3036A00A47F96 /* images */,
 				2339EA972E6C65570032C234 /* AppIcon.icon */,
 				2339EA992E6C65DC0032C234 /* AppIconDebug.icon */,
 				DD98EB282E7A42CC0016320A /* AppIcon_Chirpy.icon */,
@@ -1374,6 +1480,7 @@
 				DDD5BB0C2C285F00007E03CA /* Logger.swift */,
 				23F061B22E7B056600A1E2EA /* Logger+DataDog.swift */,
 				DD6F65732C6CB80A0053C113 /* View.swift */,
+				23AB0E652EE35E0200AFA09D /* Image.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -1427,6 +1534,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = DDC2E17E26CE248F0042C5E4 /* Build configuration list for PBXNativeTarget "Meshtastic" */;
 			buildPhases = (
+				23148E312EE1F43B00F0DB2C /* Download Node SVG Images */,
+				236CA24D2EE3073100A47F96 /* CopyFiles */,
 				BB450974275599CE00509624 /* ShellScript */,
 				DDC2E15026CE248E0042C5E4 /* Sources */,
 				DDC2E15126CE248E0042C5E4 /* Frameworks */,
@@ -1439,6 +1548,7 @@
 				DDDE5A0229AF163E00490C6C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				236CA20D2EE3036A00A47F96 /* images */,
 				DD4C11E02E8099C3003F2F2E /* PreferenceKeys */,
 			);
 			name = Meshtastic;
@@ -1451,6 +1561,9 @@
 				102B5EB02E172F41003D191E /* DatadogRUM */,
 				10D109F12E2047D600536CE6 /* DatadogSessionReplay */,
 				10D109F32E2047D600536CE6 /* DatadogTrace */,
+				2388EC372EDF88E900F6F982 /* NordicDFU */,
+				23148EB12EE247B700F0DB2C /* SVGKit */,
+				23148EB32EE247B700F0DB2C /* SVGKitSwift */,
 			);
 			productName = MeshtasticClient;
 			productReference = DDC2E15426CE248E0042C5E4 /* Meshtastic.app */;
@@ -1522,6 +1635,8 @@
 				25A978B82C13F8ED0003AAE7 /* XCLocalSwiftPackageReference "MeshtasticProtobufs" */,
 				259792242C2F10B600AD1659 /* XCRemoteSwiftPackageReference "swift-protobuf" */,
 				102B5EA92E172F41003D191E /* XCRemoteSwiftPackageReference "dd-sdk-ios" */,
+				2388EC362EDF450200F6F982 /* XCRemoteSwiftPackageReference "IOS-DFU-Library" */,
+				23148EB02EE247AB00F0DB2C /* XCRemoteSwiftPackageReference "SVGKit" */,
 			);
 			productRefGroup = DDC2E15526CE248E0042C5E4 /* Products */;
 			projectDirPath = "";
@@ -1572,6 +1687,26 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		23148E312EE1F43B00F0DB2C /* Download Node SVG Images */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Download Node SVG Images";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "MARKER=\"${TARGET_TEMP_DIR}/first-build.marker\"\n\nif [ ! -f \"$MARKER\" ]; then\n # Treating as CLEAN build (or first build in this DerivedData)\n # Force update all the note board images\n \"$SRCROOT/scripts/download_images.py\" --output-dir \"$SRCROOT/Meshtastic/Resources/images\" --output-json \"$SRCROOT/Meshtastic/Resources/DeviceHardware.json\" --force\n touch \"$MARKER\"\nelse\n # Incremental build\n # update only if there was a change in the devices json\n \"$SRCROOT/scripts/download_images.py\" --output-dir \"$SRCROOT/Meshtastic/Resources/images\" --output-json \"$SRCROOT/Meshtastic/Resources/DeviceHardware.json\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
 		BB450974275599CE00509624 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -1709,6 +1844,7 @@
 				DD6193772862F90F00E59241 /* CannedMessagesConfig.swift in Sources */,
 				DD3619152B1EF9F900C41C8C /* LocationsHandler.swift in Sources */,
 				DD6F65792C6EADE60053C113 /* DirectMessagesHelp.swift in Sources */,
+				23148E302EE1CCE500F0DB2C /* MeshtasticAPI.swift in Sources */,
 				233E99B62D849C3D00CC3A77 /* WeatherConditionsCompactWidget.swift in Sources */,
 				25F5D5C02C3F6DA6008036E3 /* Router.swift in Sources */,
 				2346A7192E2FB9A300CB9239 /* SerialConnection.swift in Sources */,
@@ -1753,6 +1889,7 @@
 				DDB6ABD928B0A4BA00384BA1 /* BluetoothModes.swift in Sources */,
 				DD1BD0EE2C603C91008C0C70 /* CustomFormatters.swift in Sources */,
 				DD0BE3102CB9FDC4000BA445 /* DetectionSensorEnums.swift in Sources */,
+				23AB0E662EE35E0200AFA09D /* Image.swift in Sources */,
 				DDD9E4E4284B208E003777C5 /* UserEntityExtension.swift in Sources */,
 				233E99CB2D85AAA900CC3A77 /* RainfallCompactWidget.swift in Sources */,
 				DD2553592855B52700E55709 /* PositionConfig.swift in Sources */,
@@ -1800,6 +1937,7 @@
 				DD268D8E2BCC90E2008073AE /* RouteEnums.swift in Sources */,
 				251926922C3CB52300249DF5 /* DeleteNodeButton.swift in Sources */,
 				DDB6ABE428B13FFF00384BA1 /* DisplayEnums.swift in Sources */,
+				2388EC3A2EDF8A1400F6F982 /* DFUModel.swift in Sources */,
 				DD4975A52B147BA90026544E /* AmbientLightingConfig.swift in Sources */,
 				3D3417D22E2DC260006A988B /* MapDataManager.swift in Sources */,
 				D93068D92B81509C0066FBC8 /* TapbackResponses.swift in Sources */,
@@ -2264,6 +2402,22 @@
 				minimumVersion = 3.1.0;
 			};
 		};
+		23148EB02EE247AB00F0DB2C /* XCRemoteSwiftPackageReference "SVGKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SVGKit/SVGKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+		2388EC362EDF450200F6F982 /* XCRemoteSwiftPackageReference "IOS-DFU-Library" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/NordicSemiconductor/IOS-DFU-Library";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.16.0;
+			};
+		};
 		259792242C2F10B600AD1659 /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-protobuf.git";
@@ -2313,6 +2467,21 @@
 			package = 102B5EA92E172F41003D191E /* XCRemoteSwiftPackageReference "dd-sdk-ios" */;
 			productName = DatadogTrace;
 		};
+		23148EB12EE247B700F0DB2C /* SVGKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 23148EB02EE247AB00F0DB2C /* XCRemoteSwiftPackageReference "SVGKit" */;
+			productName = SVGKit;
+		};
+		23148EB32EE247B700F0DB2C /* SVGKitSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 23148EB02EE247AB00F0DB2C /* XCRemoteSwiftPackageReference "SVGKit" */;
+			productName = SVGKitSwift;
+		};
+		2388EC372EDF88E900F6F982 /* NordicDFU */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2388EC362EDF450200F6F982 /* XCRemoteSwiftPackageReference "IOS-DFU-Library" */;
+			productName = NordicDFU;
+		};
 		25A978B92C13F8ED0003AAE7 /* MeshtasticProtobufs */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MeshtasticProtobufs;
@@ -2332,6 +2501,7 @@
 		DD3CC6BA28E366DF00FA9159 /* Meshtastic.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				23825A142EE119F1002515CE /* MeshtasticDataModelV 56.xcdatamodel */,
 				DD04804A2E9295A5005F946C /* MeshtasticDataModelV 55.xcdatamodel */,
 				DDDF34392E2CB8E600356DC3 /* MeshtasticDataModelV 54.xcdatamodel */,
 				DD1BEF462DFF284C0090CE24 /* MeshtasticDataModelV 53.xcdatamodel */,
@@ -2388,7 +2558,7 @@
 				DD5D0A9A2931AD6B00F7EA61 /* MeshtasticDataModelV2.xcdatamodel */,
 				DD3CC6BB28E366DF00FA9159 /* MeshtasticDataModel.xcdatamodel */,
 			);
-			currentVersion = DD04804A2E9295A5005F946C /* MeshtasticDataModelV 55.xcdatamodel */;
+			currentVersion = 23825A142EE119F1002515CE /* MeshtasticDataModelV 56.xcdatamodel */;
 			name = Meshtastic.xcdatamodeld;
 			path = Meshtastic/Meshtastic.xcdatamodeld;
 			sourceTree = "<group>";

@@ -221,7 +221,8 @@ struct MeshtasticAppleApp: App {
 		.environment(\.managedObjectContext, persistenceController.container.viewContext)
 		.environmentObject(appState)
 		.environmentObject(accessoryManager)
-		.environmentObject(appState.router) 
+		.environmentObject(appState.router)
+		.environmentObject(MeshtasticAPI.shared)
 	}
 
 }

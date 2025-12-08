@@ -127,6 +127,8 @@ func myInfoPacket (myInfo: MyNodeInfo, peripheralId: String, context: NSManagedO
 			myInfoEntity.myNodeNum = Int64(myInfo.myNodeNum)
 			myInfoEntity.rebootCount = Int32(myInfo.rebootCount)
 			myInfoEntity.deviceId = myInfo.deviceID
+			myInfoEntity.pioEnv = myInfo.pioEnv
+			
 			do {
 				try context.save()
 				Logger.data.info("💾 Saved a new myInfo for node: \(myInfo.myNodeNum.toHex(), privacy: .public)")
@@ -141,6 +143,7 @@ func myInfoPacket (myInfo: MyNodeInfo, peripheralId: String, context: NSManagedO
 			fetchedMyInfo[0].peripheralId = peripheralId
 			fetchedMyInfo[0].myNodeNum = Int64(myInfo.myNodeNum)
 			fetchedMyInfo[0].rebootCount = Int32(myInfo.rebootCount)
+			fetchedMyInfo[0].pioEnv = myInfo.pioEnv
 
 			do {
 				try context.save()
